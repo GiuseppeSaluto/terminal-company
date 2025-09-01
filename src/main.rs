@@ -4,6 +4,7 @@ use std::io::{self, Write};
 use crate::data::{BESTIARY, MOONS, SHIP_UPGRADE, STORE_ITEMS};
 
 mod data;
+mod state;
 
 fn main() {
     println!("Booting Terminal Company OS...");
@@ -11,6 +12,7 @@ fn main() {
     println!("Before proceeding, you must accept the Terms and Conditions.");
     println!("Type 'ACCEPT' to continue or 'DENY' to exit.");
 
+    // start sequence
     loop {
         print!("> ");
         io::stdout().flush().unwrap();
@@ -59,14 +61,6 @@ fn main() {
                     rand::random::<u16>() % 1000
                 );
             }
-            // cmd if cmd.starts_with("view ") => {
-            //     let ship = cmd.trim_start_matches("view ").trim();
-            //     if SHIP_UPGRADE.iter().any(|s| s.eq_ignore_ascii_case(ship)) {
-            //         println!("Telecamera spostata su '{}'.", ship);
-            //     } else {
-            //         println!("Nave '{}' non trovata.", ship);
-            //     }
-            // }
             "bestiary" => {
                 println!("scannable creatures:");
                 for (name, desc) in BESTIARY {
@@ -89,20 +83,16 @@ fn main() {
                     .iter()
                     .any(|i| i.eq_ignore_ascii_case(store_item))
                 {
-                    println!("Hai acquistato '{}'.", store_item);
+                    println!("You have purchased '{}'.", store_item);
                 } else {
-                    println!("Oggetto '{}' non disponibile.", store_item);
-                    println!("Oggetti disponibili: {}", STORE_ITEMS.join(", "));
+                    println!("'{}'item not available.", store_item);
+                    println!("Items available: {}", STORE_ITEMS.join(", "));
                 }
             }
             "" => {}
             _ => {
-                println!("Comando non riconosciuto. Digita 'help' per la lista dei comandi.");
+                println!("Command not recognized. Type 'help' for the list of commands.");
             }
         }
-        io::stdout().flush().unwrap();
-
-        let mut input = String::new();
-        io::stdin().read_line(&mut input).unwrap();
     }
 }
