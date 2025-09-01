@@ -11,6 +11,7 @@ pub const MOONS: &[&str] = &[
     "Artifice",
     "Embrion",
     "Liquidation",
+    "Company"
 ];
 pub const STORE_ITEMS: &[&str] = &[
     "Shovel",
