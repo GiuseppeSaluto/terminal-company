@@ -13,6 +13,7 @@ pub struct Ship {
     pub decorations: Vec<String>
 }
 
+#[derive(Clone)]
 pub struct Item {
     pub name: &'static str,
     pub price: u32,

@@ -1,10 +1,7 @@
+use crate::data::{BESTIARY, MOONS, STORE_ITEMS};
+use crate::state::{GameState, Player, Ship};
 use rand;
 use std::io::{self, Write};
-
-use crate::{
-    data::{BESTIARY, MOONS, SHIP_DECORATIONS, SHIP_UPGRADE, STORE_ITEMS},
-    state::{GameState, Player, Ship},
-};
 
 mod data;
 mod state;
@@ -15,7 +12,6 @@ fn main() {
     println!("Before proceeding, you must accept the Terms and Conditions.");
     println!("Type 'ACCEPT' to continue or 'DENY' to exit.");
 
-    // start sequence
     loop {
         print!("> ");
         io::stdout().flush().unwrap();
@@ -35,9 +31,10 @@ fn main() {
         }
     }
 
+    // GameState
     let mut game_state = GameState {
         players: vec![Player {
-            name: "TestPlayer".to_string(),
+            name: "testOperator".to_string(),
             role: "Operator".to_string(),
             hp: 100,
             inventory: Vec::new(),
@@ -69,7 +66,9 @@ fn main() {
             cmd if cmd.starts_with("go to ") => {
                 let moon = cmd.trim_start_matches("go to ").trim();
                 if MOONS.iter().any(|m| m.eq_ignore_ascii_case(moon)) {
+                    game_state.ship.location = moon.to_string();
                     println!("Journey to {} underway...", moon);
+                    println!("Your current location is: {}", game_state.ship.location);
                 } else {
                     println!("'{}' Moon not available.", moon);
                 }
@@ -93,21 +92,36 @@ fn main() {
                 println!("moons - Lists visitable planets");
                 println!("go to [moon name] - Travel to a planet");
                 println!("scan - Scan the environment");
-                println!("view [ship name] - Switch cameras on an operator");
                 println!("bestiary - Show scannable creatures");
                 println!("buy [item name] - Buy an item");
                 println!("help - Show this help");
             }
             cmd if cmd.starts_with("buy ") => {
-                let store_item = cmd.trim_start_matches("buy ").trim();
-                if STORE_ITEMS
+                let item_name = cmd.trim_start_matches("buy ").trim();
+                let player = &mut game_state.players[0];
+
+                // search object
+                if let Some(item) = STORE_ITEMS
                     .iter()
-                    .any(|i| i.eq_ignore_ascii_case(store_item))
+                    .find(|&i| i.name.eq_ignore_ascii_case(item_name))
                 {
-                    println!("You have purchased '{}'.", store_item);
+                    if player.credits >= item.price {
+                        player.credits -= item.price;
+                        player.inventory.push(item.clone());
+                        println!(
+                            "You have purchased '{}' for {} credits.",
+                            item.name, item.price
+                        );
+                        println!("Your remaining credits: {}", player.credits);
+                    } else {
+                        println!("Not enough credits to purchase '{}'.", item.name);
+                        println!(
+                            "You need {} credits, but you have only {}.",
+                            item.price, player.credits
+                        );
+                    }
                 } else {
-                    println!("'{}'item not available.", store_item);
-                    println!("Items available: {}", STORE_ITEMS.join(", "));
+                    println!("'{}' item not available.", item_name);
                 }
             }
             "" => {}
