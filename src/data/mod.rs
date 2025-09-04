@@ -1,3 +1,5 @@
+use crate::state::Item;
+
 pub const MOONS: &[&str] = &[
     "Experimentation",
     "Assurance",
@@ -11,19 +13,82 @@ pub const MOONS: &[&str] = &[
     "Artifice",
     "Embrion",
     "Liquidation",
-    "Company"
+    "Company",
 ];
-pub const STORE_ITEMS: &[&str] = &[
-    "Shovel",
-    "Spray Paint",
-    "SStun Grenade",
-    "TZP-Inhalant",
-    "Walkie-Talkie",
-    "Zap Gun",
-    "Weed Killer",
-    "Cruiser",
-    "Belt Bag",
-    "Survival Kit",
+
+pub const STORE_ITEMS: &[Item] = &[
+    Item {
+        name: "Shovel",
+        price: 30,
+        weight: 8.0,
+        description: "A standard-issue shovel. Digs things.",
+    },
+    Item {
+        name: "Spray Paint",
+        price: 50,
+        weight: 0.0,
+        description: "For marking paths or walls.",
+    },
+    Item {
+        name: "Stun Grenade",
+        price: 40,
+        weight: 5.0,
+        description: "A non-lethal grenade to stun creatures.",
+    },
+    Item {
+        name: "TZP-Inhalant",
+        price: 120,
+        weight: 0.0,
+        description: "Makes you move faster and use less stamina + Squeaky voice.",
+    },
+    Item {
+        name: "Walkie-Talkie",
+        price: 12,
+        weight: 0.0,
+        description: "Allows Map Wide Communication (Uses Battery Charge) (Has Large Charge).",
+    },
+    Item {
+        name: "Zap Gun",
+        price: 400,
+        weight: 11.0,
+        description: "Scans for Monsters and Stuns them (uses battery charge).",
+    },
+    Item {
+        name: "Weed Killer",
+        price: 25,
+        weight: 0.0,
+        description: "Sprays a non-lethal poison. (Counts as a sound source)",
+    },
+    Item {
+        name: "Company Cruiser",
+        price: 400,
+        weight: 0.0,
+        description: "Can be bought for free one time if destroyed or lost. Cannot be carried.",
+    },
+    Item {
+        name: "Belt Bag",
+        price: 45,
+        weight: 15.5,
+        description: "A small bag that can be carried in a single hand. Holds 4 items.",
+    },
+    Item {
+        name: "Survival Kit",
+        price: 138,
+        weight: 0.0,
+        description: "A kit containing 4 Flashlights, 4 Walkie-talkies, and a Shovel.",
+    },
+    Item {
+        name: "Flashlight",
+        price: 15,
+        weight: 5.0,
+        description: "A small portable light source. (Uses battery charge) (Has Large Charge)",
+    },
+    Item {
+        name: "Pro-flashlight",
+        price: 25,
+        weight: 5.0,
+        description: "A powerful portable light source. (Uses battery charge) (Has Large Charge)",
+    },
 ];
 pub const SHIP_UPGRADE: &[&str] = &[
     "Teleporter",

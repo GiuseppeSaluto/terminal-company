@@ -1,7 +1,10 @@
 use rand;
 use std::io::{self, Write};
 
-use crate::data::{BESTIARY, MOONS, SHIP_UPGRADE, STORE_ITEMS};
+use crate::{
+    data::{BESTIARY, MOONS, SHIP_DECORATIONS, SHIP_UPGRADE, STORE_ITEMS},
+    state::{GameState, Player, Ship},
+};
 
 mod data;
 mod state;
@@ -31,6 +34,24 @@ fn main() {
             println!("Please type 'ACCEPT' or 'DENY'.");
         }
     }
+
+    let mut game_state = GameState {
+        players: vec![Player {
+            name: "TestPlayer".to_string(),
+            role: "Operator".to_string(),
+            hp: 100,
+            inventory: Vec::new(),
+            credits: 30,
+        }],
+        ship: Ship {
+            location: "Company".to_string(),
+            number_operators_alive: 1,
+            upgrades: Vec::new(),
+            decorations: Vec::new(),
+        },
+        turn_number: 1,
+        is_game_over: false,
+    };
 
     // Main terminal loop
     loop {

@@ -1,22 +1,28 @@
-struct Player {
-    name: String,
-    role: String,
-    hp: u32,
-    inventory: Vec<String>,
-    credits: u32
+pub struct Player {
+    pub name: String,
+    pub role: String,
+    pub hp: u32,
+    pub inventory: Vec<Item>,
+    pub credits: u32
 }
 
-struct Ship {
-    location: String,
-    number_operators_alive: u32,
-    upgrades: Vec<String>,
-    decorations: Vec<String>
+pub struct Ship {
+    pub location: String,
+    pub number_operators_alive: u32,
+    pub upgrades: Vec<String>,
+    pub decorations: Vec<String>
 }
 
+pub struct Item {
+    pub name: &'static str,
+    pub price: u32,
+    pub weight: f32,
+    pub description: &'static str,
+}
 
-struct GameState {
-    players: Vec<Player>,
-    ship: Ship,
-    turn_number: u32,
-    is_game_over: bool
+pub struct GameState {
+    pub players: Vec<Player>,
+    pub ship: Ship,
+    pub turn_number: u32,
+    pub is_game_over: bool
 }
