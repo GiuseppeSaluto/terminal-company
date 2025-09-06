@@ -91,6 +91,21 @@ fn main() {
                 }
                 println!("-------------------------------------------------------------");
             }
+            // Inventory
+            "inventory" => {
+                println!("-------------------------------------------------------------");
+                println!("Your Inventory Status:");
+                println!("-------------------------------------------------------------");
+                let player = &game_state.players[0];
+
+                if player.inventory.is_empty() {
+                    println!("Your inventory is currently empty. Buy some items from the 'store'!")
+                } else {
+                    for item in player.inventory.iter() {
+                        println!("- {}: {} credits", item.name, item.price);
+                    }
+                }
+            }
             // Scanner
             "scan" => {
                 println!("-------------------------------------------------------------");
