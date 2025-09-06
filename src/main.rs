@@ -62,7 +62,11 @@ fn main() {
         match input {
             // Moons
             "moons" => {
-                println!("Visitable: {}", MOONS.join(", "));
+                println!("-------------------------------------------------------------");
+                println!("Visitable Moons:");
+                println!("-------------------------------------------------------------");
+                println!("{}", MOONS.join(", "));
+                println!("-------------------------------------------------------------");
             }
             // Transfer
             cmd if cmd.starts_with("go to ") => {
@@ -75,31 +79,54 @@ fn main() {
                     println!("'{}' Moon not available.", moon);
                 }
             }
+            // Store
+            "store" => {
+                println!("-------------------------------------------------------------");
+                println!("Available Items:");
+                for item in STORE_ITEMS.iter() {
+                    println!("-------------------------------------------------------------");
+                    println!("- {}", item.name);
+                    println!("- Price: {} credits", item.price);
+                    println!("- Description: {}", item.description);
+                }
+                println!("-------------------------------------------------------------");
+            }
             // Scanner
             "scan" => {
-                println!("environment scan...");
-                println!("enemies detected: {}", rand::random::<u8>() % 5);
+                println!("-------------------------------------------------------------");
+                println!("Environment Scan:");
+                println!("-------------------------------------------------------------");
+                println!("Enemies detected: {}", rand::random::<u8>() % 5);
                 println!(
                     "Total value of objects: {} credits",
                     rand::random::<u16>() % 1000
                 );
+                println!("-------------------------------------------------------------");
             }
             // Bestiary
             "bestiary" => {
-                println!("scannable creatures:");
+                println!("-------------------------------------------------------------");
+                println!("Scannable Creatures:");
+                println!("-------------------------------------------------------------");
                 for (name, desc) in BESTIARY {
                     println!("- {}: {}", name, desc);
                 }
+                println!("-------------------------------------------------------------");
             }
             // Help
             "help" => {
+                println!("-------------------------------------------------------------");
                 println!("Commands available:");
-                println!("moons - Lists visitable planets");
-                println!("go to [moon name] - Travel to a planet");
-                println!("scan - Scan the environment");
-                println!("bestiary - Show scannable creatures");
-                println!("buy [item name] - Buy an item");
-                println!("help - Show this help");
+                println!("-------------------------------------------------------------");
+                println!("moons          - Lists visitable planets");
+                println!("go to [moon]   - Travel to a planet");
+                println!("store          - Show the Store Items");
+                println!("scan           - Scan the environment");
+                println!("bestiary       - Show scannable creatures");
+                println!("buy [item]     - Buy an item");
+                println!("inventory      - Show your inventory");
+                println!("help           - Show this help");
+                println!("-------------------------------------------------------------");
             }
             // Buy in the Store
             cmd if cmd.starts_with("buy ") => {
@@ -109,25 +136,31 @@ fn main() {
                 // search object
                 if let Some(item) = STORE_ITEMS
                     .iter()
-                    .find(|&i| i.name.eq_ignore_ascii_case(item_name))
+                    .find(|i| i.name.eq_ignore_ascii_case(item_name))
                 {
                     if player.credits >= item.price {
                         player.credits -= item.price;
                         player.inventory.push(item.clone());
+                        println!("-------------------------------------------------------------");
                         println!(
                             "You have purchased '{}' for {} credits.",
                             item.name, item.price
                         );
                         println!("Your remaining credits: {}", player.credits);
+                        println!("-------------------------------------------------------------");
                     } else {
+                        println!("-------------------------------------------------------------");
                         println!("Not enough credits to purchase '{}'.", item.name);
                         println!(
                             "You need {} credits, but you have only {}.",
                             item.price, player.credits
                         );
+                        println!("-------------------------------------------------------------");
                     }
                 } else {
+                    println!("-------------------------------------------------------------");
                     println!("'{}' item not available.", item_name);
+                    println!("-------------------------------------------------------------");
                 }
             }
             "" => {}
