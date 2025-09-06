@@ -1,10 +1,11 @@
-use crate::data::{BESTIARY, MOONS, STORE_ITEMS};
-use crate::state::{GameState, Player, Ship};
 use rand;
 use std::io::{self, Write};
-
-mod data;
-mod state;
+use models::entities::{Player, Ship, GameState};
+use models::lists::{MOONS, STORE_ITEMS, BESTIARY};
+mod models {
+    pub mod entities;
+    pub mod lists;
+}
 
 fn main() {
     println!("Booting Terminal Company OS...");

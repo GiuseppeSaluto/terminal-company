@@ -1,4 +1,4 @@
-use crate::state::Item;
+use crate::models::entities::Item;
 use lazy_static::lazy_static;
 
 pub const MOONS: &[&str] = &[
