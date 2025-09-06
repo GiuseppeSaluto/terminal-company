@@ -34,7 +34,7 @@ fn main() {
     // GameState
     let mut game_state = GameState {
         players: vec![Player {
-            name: "testOperator".to_string(),
+            name: "tester01".to_string(),
             role: "Operator".to_string(),
             hp: 100,
             inventory: Vec::new(),
@@ -60,9 +60,11 @@ fn main() {
         let input = input.trim();
 
         match input {
+            // Moons
             "moons" => {
                 println!("Visitable: {}", MOONS.join(", "));
             }
+            // Transfer
             cmd if cmd.starts_with("go to ") => {
                 let moon = cmd.trim_start_matches("go to ").trim();
                 if MOONS.iter().any(|m| m.eq_ignore_ascii_case(moon)) {
@@ -73,6 +75,7 @@ fn main() {
                     println!("'{}' Moon not available.", moon);
                 }
             }
+            // Scanner
             "scan" => {
                 println!("environment scan...");
                 println!("enemies detected: {}", rand::random::<u8>() % 5);
@@ -81,12 +84,14 @@ fn main() {
                     rand::random::<u16>() % 1000
                 );
             }
+            // Bestiary
             "bestiary" => {
                 println!("scannable creatures:");
                 for (name, desc) in BESTIARY {
                     println!("- {}: {}", name, desc);
                 }
             }
+            // Help
             "help" => {
                 println!("Commands available:");
                 println!("moons - Lists visitable planets");
@@ -96,6 +101,7 @@ fn main() {
                 println!("buy [item name] - Buy an item");
                 println!("help - Show this help");
             }
+            // Buy in the Store
             cmd if cmd.starts_with("buy ") => {
                 let item_name = cmd.trim_start_matches("buy ").trim();
                 let player = &mut game_state.players[0];
