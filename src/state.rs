@@ -1,3 +1,6 @@
+use serde::{Serialize, Deserialize};
+
+#[derive(Serialize, Deserialize)]
 pub struct Player {
     pub name: String,
     pub role: String,
@@ -5,7 +8,7 @@ pub struct Player {
     pub inventory: Vec<Item>,
     pub credits: u32
 }
-
+#[derive(Serialize, Deserialize)]
 pub struct Ship {
     pub location: String,
     pub number_operators_alive: u32,
@@ -13,14 +16,14 @@ pub struct Ship {
     pub decorations: Vec<String>
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Item {
-    pub name: &'static str,
+    pub name: String,
     pub price: u32,
     pub weight: f32,
-    pub description: &'static str,
+    pub description: String,
 }
-
+#[derive(Serialize, Deserialize)]
 pub struct GameState {
     pub players: Vec<Player>,
     pub ship: Ship,
