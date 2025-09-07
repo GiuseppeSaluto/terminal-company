@@ -1,6 +1,9 @@
+use std::sync::Arc;
+
 use crate::data::mongodb;
 use crate::models::entities::GameState;
 use crate::models::lists::{BESTIARY, MOONS, STORE_ITEMS};
+use ::mongodb::Client;
 use rand;
 
 pub fn handle_moons() {
@@ -109,15 +112,15 @@ pub fn handle_buy(game_state: &mut GameState, cmd: &str) {
     }
 }
 
-pub async fn handle_save(game_state: &GameState) {
-    match mongodb::save_game_state(&game_state).await {
+pub async fn handle_save(client: Arc<Client>, game_state: &GameState) {
+    match mongodb::save_game_state(&client, game_state).await {
         Ok(_) => println!("Game state saved successfully."),
         Err(e) => println!("Failed to save game state: {}", e),
     }
 }
 
-pub async fn handle_load(game_state: &mut GameState) {
-    match mongodb::load_game_state().await {
+pub async fn handle_load(client: Arc<Client>, game_state: &mut GameState) {
+    match mongodb::load_game_state(&client).await {
         Ok(Some(state)) => {
             *game_state = state;
             println!("-------------------------------------------------------------");

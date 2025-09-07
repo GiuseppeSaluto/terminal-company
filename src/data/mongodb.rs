@@ -1,20 +1,15 @@
 use crate::models::entities::GameState;
-use dotenv::dotenv;
 use mongodb::bson::doc;
+use mongodb::options::ReplaceOptions;
 use mongodb::{Client, Collection, options::ClientOptions};
 use std::env;
 use std::io;
+use std::sync::Arc;
 
-pub async fn get_game_state_collection() -> io::Result<Collection<GameState>> {
-    dotenv().ok();
-    let database_url = env::var("DATABASE_URL").map_err(|e| {
-        io::Error::new(
-            io::ErrorKind::Other,
-            format!("Failed to get DATABASE_URL: {}", e),
-        )
-    })?;
+pub async fn init_db() -> io::Result<Arc<Client>> {
+    let uri = env::var("MONGODB_URI").unwrap_or_else(|_| "mongodb://localhost:27017".into());
 
-    let client_options = ClientOptions::parse(database_url).await.map_err(|e| {
+    let client_options = ClientOptions::parse(&uri).await.map_err(|e| {
         io::Error::new(
             io::ErrorKind::Other,
             format!("Failed to parse connection string: {}", e),
@@ -28,52 +23,58 @@ pub async fn get_game_state_collection() -> io::Result<Collection<GameState>> {
         )
     })?;
 
-    client
-        .database("admin")
-        .run_command(mongodb::bson::doc! {"ping": 1})
-        .await
-        .map_err(|e| {
-            io::Error::new(
-                io::ErrorKind::Other,
-                format!("Failed to connect to MongoDB: {}", e),
-            )
-        })?;
+    ensure_collection_exists(&client, "terminal_company", "game_state").await?;
 
-    let db = client.database("terminal_company");
-
-    Ok(db.collection("game_state"))
+    Ok(Arc::new(client))
 }
 
-pub async fn save_game_state(game_state: &GameState) -> io::Result<()> {
-    let collection = get_game_state_collection().await?;
+async fn ensure_collection_exists(
+    client: &Client,
+    db_name: &str,
+    coll_name: &str,
+) -> io::Result<()> {
+    let db = client.database(db_name);
+    let names: Vec<String> = db.list_collection_names().await.map_err(|e| {
+        io::Error::new(
+            io::ErrorKind::Other,
+            format!("Failed to list collections: {}", e),
+        )
+    })?;
 
-    let filter = doc! { "_id": "game_state" };
-
-    collection
-        .replace_one(filter, game_state)
-        .await
-        .map_err(|e| {
+    if !names.iter().any(|n| n == coll_name) {
+        db.create_collection(coll_name).await.map_err(|e| {
             io::Error::new(
                 io::ErrorKind::Other,
-                format!("Failed to save game state: {}", e),
+                format!("Failed to create collection: {}", e),
             )
         })?;
+    }
     Ok(())
 }
 
-pub async fn load_game_state() -> io::Result<Option<GameState>> {
-    let collection = get_game_state_collection().await?;
+pub async fn save_game_state(client: &Client, game_state: &GameState) -> io::Result<()> {
+    let collection = client.database("terminal_company").collection::<GameState>("game_state");
+    
+    // Per un'applicazione a giocatore singolo, possiamo usare un ID fisso per sovrascrivere.
     let filter = doc! { "_id": "game_state" };
-    let result = collection.find_one(filter).await.map_err(|e| {
-        io::Error::new(
-            io::ErrorKind::Other,
-            format!("Failed to load game state: {}", e),
-        )
-    })?;
-    if let Some(state) = result {
-        println!("Game state loaded.");
-        Ok(Some(state))
-    } else {
-        Ok(None)
-    }
+    let opts = ReplaceOptions::builder().upsert(true).build();
+    
+    collection
+        .replace_one(filter, game_state)
+        .await
+        .map_err(|e| io::Error::new(io::ErrorKind::Other, format!("Failed to save game state: {}", e)))?;
+        
+    Ok(())
+}
+
+pub async fn load_game_state(client: &Client) -> io::Result<Option<GameState>> {
+    let collection = client.database("terminal_company").collection::<GameState>("game_state");
+    let filter = doc! { "_id": "game_state" };
+    
+    let result = collection
+        .find_one(filter)
+        .await
+        .map_err(|e| io::Error::new(io::ErrorKind::Other, format!("Failed to load game state: {}", e)))?;
+        
+    Ok(result)
 }

@@ -1,9 +1,11 @@
-use crate::models::entities::{GameState, Player, Ship};
-use std::io::{self, Write};
-use std::{thread, time};
 use crate::data::mongodb;
+use crate::models::entities::{GameState, Player, Ship};
+use ::mongodb::Client;
+use std::io::{self, Write};
+use std::sync::Arc;
+use std::{thread, time};
 
-pub async fn handle_registration() -> GameState {
+pub async fn handle_registration(client: Arc<Client>) -> GameState {
     println!("Booting Terminal Company OS...");
     println!("Welcome to Terminal Company.");
 
@@ -62,8 +64,8 @@ pub async fn handle_registration() -> GameState {
 
     let game_state = GameState {
         players: vec![Player {
-            name: name,
-            role: role,
+            name,
+            role,
             hp: 100,
             inventory: Vec::new(),
             credits: 30,
@@ -78,7 +80,7 @@ pub async fn handle_registration() -> GameState {
         is_game_over: false,
     };
 
-    mongodb::save_game_state(&game_state)
+    mongodb::save_game_state(&client, &game_state)
         .await
         .expect("Failed to save initial game state.");
 
