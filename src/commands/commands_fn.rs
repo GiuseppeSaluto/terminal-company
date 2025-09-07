@@ -1,4 +1,5 @@
-use crate::models::entities::{GameState};
+use crate::data::mongodb;
+use crate::models::entities::GameState;
 use crate::models::lists::{BESTIARY, MOONS, STORE_ITEMS};
 use rand;
 
@@ -19,6 +20,7 @@ pub fn handle_go_to(game_state: &mut GameState, moon: &str) {
 pub fn handle_store() {
     println!("Available Items:");
     for item in STORE_ITEMS.iter() {
+        let item = item;
         println!("-------------------------------------------------------------");
         println!("- {}:", item.name);
         println!("  - Price: {} credits", item.price);
@@ -39,57 +41,48 @@ pub fn handle_inv(game_state: &GameState) {
     } else {
         for item in player.inventory.iter() {
             println!("- {}: {} credits", item.name, item.price);
+            println!("  - Weight: {}", item.weight);
+            println!("  - Description: {}", item.description);
         }
     }
+    println!("-------------------------------------------------------------");
 }
 
 pub fn handle_scan() {
-    println!("-------------------------------------------------------------");
-    println!("Environment Scan:");
-    println!("-------------------------------------------------------------");
-    println!("Enemies detected: {}", rand::random::<u8>() % 5);
+    println!("environment scan...");
+    println!("enemies detected: {}", rand::random::<u8>() % 5);
     println!(
         "Total value of objects: {} credits",
         rand::random::<u16>() % 1000
     );
-    println!("-------------------------------------------------------------");
 }
 
 pub fn handle_best() {
-    println!("-------------------------------------------------------------");
-    println!("Scannable Creatures:");
-    println!("-------------------------------------------------------------");
+    println!("scannable creatures:");
     for (name, desc) in BESTIARY {
         println!("- {}: {}", name, desc);
     }
-    println!("-------------------------------------------------------------");
 }
 
 pub fn handle_help() {
-    println!("-------------------------------------------------------------");
     println!("Commands available:");
-    println!("-------------------------------------------------------------");
-    println!("moons          - Lists visitable planets");
-    println!("go to [moon]   - Travel to a planet");
-    println!("store          - Show the Store Items");
-    println!("scan           - Scan the environment");
-    println!("bestiary       - Show scannable creatures");
-    println!("buy [item]     - Buy an item");
-    println!("inventory      - Show your inventory");
-    println!("save           - Save the game state");
-    println!("load           - Load the game state");
-    println!("help           - Show this help");
-    println!("-------------------------------------------------------------");
+    println!("moons - Lists visitable planets");
+    println!("go to [moon name] - Travel to a planet");
+    println!("store - Show the Store Items");
+    println!("scan - Scan the environment");
+    println!("bestiary - Show scannable creatures");
+    println!("buy [item name] - Buy an item");
+    println!("inventory - Show your inventory");
+    println!("save - Save the game state");
+    println!("load - Load the game state");
+    println!("help - Show this help");
 }
 
 pub fn handle_buy(game_state: &mut GameState, cmd: &str) {
     let item_name = cmd.trim_start_matches("buy ").trim();
     let player = &mut game_state.players[0];
 
-    if let Some(item) = STORE_ITEMS
-        .iter()
-        .find(|i| i.name.eq_ignore_ascii_case(item_name))
-    {
+    if let Some(item) = STORE_ITEMS.iter().find(|i| i.name.eq_ignore_ascii_case(item_name)) {
         if player.credits >= item.price {
             player.credits -= item.price;
             player.inventory.push(item.clone());
@@ -113,5 +106,33 @@ pub fn handle_buy(game_state: &mut GameState, cmd: &str) {
         println!("-------------------------------------------------------------");
         println!("'{}' item not available.", item_name);
         println!("-------------------------------------------------------------");
+    }
+}
+
+pub async fn handle_save(game_state: &GameState) {
+    match mongodb::save_game_state(&game_state).await {
+        Ok(_) => println!("Game state saved successfully."),
+        Err(e) => println!("Failed to save game state: {}", e),
+    }
+}
+
+pub async fn handle_load(game_state: &mut GameState) {
+    match mongodb::load_game_state().await {
+        Ok(Some(state)) => {
+            *game_state = state;
+            println!("-------------------------------------------------------------");
+            println!("Game state loaded successfully.");
+            println!("-------------------------------------------------------------");
+        }
+        Ok(None) => {
+            println!("-------------------------------------------------------------");
+            println!("No saved game state found.");
+            println!("-------------------------------------------------------------");
+        }
+        Err(e) => {
+            println!("-------------------------------------------------------------");
+            println!("Error loading game state: {}", e);
+            println!("-------------------------------------------------------------");
+        }
     }
 }

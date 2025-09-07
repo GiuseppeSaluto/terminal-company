@@ -1,17 +1,25 @@
 use crate::models::entities::GameState;
+use dotenv::dotenv;
 use mongodb::bson::doc;
 use mongodb::{Client, Collection, options::ClientOptions};
+use std::env;
 use std::io;
 
 pub async fn get_game_state_collection() -> io::Result<Collection<GameState>> {
-    let client_options = ClientOptions::parse("mongodb://localhost:27017")
-        .await
-        .map_err(|e| {
-            io::Error::new(
-                io::ErrorKind::Other,
-                format!("Failed to parse connection string: {}", e),
-            )
-        })?;
+    dotenv().ok();
+    let database_url = env::var("DATABASE_URL").map_err(|e| {
+        io::Error::new(
+            io::ErrorKind::Other,
+            format!("Failed to get DATABASE_URL: {}", e),
+        )
+    })?;
+
+    let client_options = ClientOptions::parse(database_url).await.map_err(|e| {
+        io::Error::new(
+            io::ErrorKind::Other,
+            format!("Failed to parse connection string: {}", e),
+        )
+    })?;
 
     let client = Client::with_options(client_options).map_err(|e| {
         io::Error::new(
@@ -50,8 +58,6 @@ pub async fn save_game_state(game_state: &GameState) -> io::Result<()> {
                 format!("Failed to save game state: {}", e),
             )
         })?;
-
-    println!("Game state saved successfully.");
     Ok(())
 }
 
