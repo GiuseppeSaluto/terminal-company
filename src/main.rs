@@ -5,9 +5,11 @@ mod models {
 mod data {
     pub mod mongodb;
 }
+mod commands {
+    pub mod commands_fn;
+}
+use crate::commands::commands_fn;
 use models::entities::{GameState, Player, Ship};
-use models::lists::{BESTIARY, MOONS, STORE_ITEMS};
-use rand;
 use std::io::{self, Write};
 
 #[tokio::main]
@@ -65,132 +67,35 @@ async fn main() {
         let input = input.trim();
 
         match input {
-            // Moons
-            "moons" => {
-                println!("-------------------------------------------------------------");
-                println!("Visitable Moons:");
-                println!("-------------------------------------------------------------");
-                println!("{}", MOONS.join(", "));
-                println!("-------------------------------------------------------------");
-            }
-            // Transfer
+            "moons" => commands_fn::handle_moons(),
             cmd if cmd.starts_with("go to ") => {
                 let moon = cmd.trim_start_matches("go to ").trim();
-                if MOONS.iter().any(|m| m.eq_ignore_ascii_case(moon)) {
-                    game_state.ship.location = moon.to_string();
-                    println!("Journey to {} underway...", moon);
-                    println!("Your current location is: {}", game_state.ship.location);
-                } else {
-                    println!("'{}' Moon not available.", moon);
-                }
+                commands_fn::handle_go_to(&mut game_state, moon);
             }
-            // Store
-            "store" => {
-                println!("-------------------------------------------------------------");
-                println!("Available Items:");
-                for item in STORE_ITEMS.iter() {
-                    println!("-------------------------------------------------------------");
-                    println!("- {}", item.name);
-                    println!("- Price: {} credits", item.price);
-                    println!("- Description: {}", item.description);
-                }
-                println!("-------------------------------------------------------------");
-            }
-            // Inventory
+            "store" => commands_fn::handle_store(),
             "inventory" => {
-                println!("-------------------------------------------------------------");
-                println!("Your Inventory Status:");
-                println!("-------------------------------------------------------------");
-                let player = &game_state.players[0];
-
-                if player.inventory.is_empty() {
-                    println!("Your inventory is currently empty. Buy some items from the 'store'!")
-                } else {
-                    for item in player.inventory.iter() {
-                        println!("- {}: {} credits", item.name, item.price);
-                    }
-                }
+                commands_fn::handle_inv(&game_state);
             }
             // Scanner
             "scan" => {
-                println!("-------------------------------------------------------------");
-                println!("Environment Scan:");
-                println!("-------------------------------------------------------------");
-                println!("Enemies detected: {}", rand::random::<u8>() % 5);
-                println!(
-                    "Total value of objects: {} credits",
-                    rand::random::<u16>() % 1000
-                );
-                println!("-------------------------------------------------------------");
+                commands_fn::handle_scan();
             }
             // Bestiary
             "bestiary" => {
-                println!("-------------------------------------------------------------");
-                println!("Scannable Creatures:");
-                println!("-------------------------------------------------------------");
-                for (name, desc) in BESTIARY {
-                    println!("- {}: {}", name, desc);
-                }
-                println!("-------------------------------------------------------------");
+                commands_fn::handle_best();
             }
             // Help
             "help" => {
-                println!("-------------------------------------------------------------");
-                println!("Commands available:");
-                println!("-------------------------------------------------------------");
-                println!("moons          - Lists visitable planets");
-                println!("go to [moon]   - Travel to a planet");
-                println!("store          - Show the Store Items");
-                println!("scan           - Scan the environment");
-                println!("bestiary       - Show scannable creatures");
-                println!("buy [item]     - Buy an item");
-                println!("inventory      - Show your inventory");
-                println!("save           - Save the game state");
-                println!("load           - Load the game state");
-                println!("help           - Show this help");
-                println!("-------------------------------------------------------------");
+                commands_fn::handle_help();
             }
             // Buy in the Store
             cmd if cmd.starts_with("buy ") => {
-                let item_name = cmd.trim_start_matches("buy ").trim();
-                let player = &mut game_state.players[0];
-
-                // search object
-                if let Some(item) = STORE_ITEMS
-                    .iter()
-                    .find(|i| i.name.eq_ignore_ascii_case(item_name))
-                {
-                    if player.credits >= item.price {
-                        player.credits -= item.price;
-                        player.inventory.push(item.clone());
-                        println!("-------------------------------------------------------------");
-                        println!(
-                            "You have purchased '{}' for {} credits.",
-                            item.name, item.price
-                        );
-                        println!("Your remaining credits: {}", player.credits);
-                        println!("-------------------------------------------------------------");
-                    } else {
-                        println!("-------------------------------------------------------------");
-                        println!("Not enough credits to purchase '{}'.", item.name);
-                        println!(
-                            "You need {} credits, but you have only {}.",
-                            item.price, player.credits
-                        );
-                        println!("-------------------------------------------------------------");
-                    }
-                } else {
-                    println!("-------------------------------------------------------------");
-                    println!("'{}' item not available.", item_name);
-                    println!("-------------------------------------------------------------");
-                }
+                commands_fn::handle_buy(&mut game_state, cmd);
             }
-            "save" => {
-                match data::mongodb::save_game_state(&game_state).await {
-                    Ok(_) => println!("Game state saved successfully."),
-                    Err(e) => println!("Failed to save game state: {}", e),
-                }
-            }
+            "save" => match data::mongodb::save_game_state(&game_state).await {
+                Ok(_) => println!("Game state saved successfully."),
+                Err(e) => println!("Failed to save game state: {}", e),
+            },
             "load" => match data::mongodb::load_game_state().await {
                 Ok(Some(state)) => {
                     game_state = state;
