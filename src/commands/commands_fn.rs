@@ -1,10 +1,67 @@
+use std::io::{self, Write};
 use std::sync::Arc;
 
+use crate::commands::registration;
 use crate::data::mongodb;
 use crate::models::entities::GameState;
 use crate::models::lists::{BESTIARY, MOONS, STORE_ITEMS};
 use ::mongodb::Client;
 use rand;
+
+pub async fn run_repl(client: Arc<Client>, mut game_state: GameState) -> Result<(), Box<dyn std::error::Error>> {
+    loop {
+        print!("> ");
+        io::stdout().flush().expect("flush failed");
+
+        let mut input = String::new();
+        if io::stdin().read_line(&mut input).is_err() {
+            println!("⚠️ Error reading input.");
+            continue;
+        }
+        let input = input.trim();
+
+        match input {
+            "" => {}
+            "moons" => handle_moons(),
+            "store" => handle_store(),
+            "inventory" => handle_inv(&game_state),
+            "scan" => handle_scan(),
+            "bestiary" => handle_best(),
+            "help" => handle_help(),
+            "save" => {
+                handle_save(client.clone(), &game_state).await;
+            }
+            "load" => {
+                handle_load(client.clone(), &mut game_state).await;
+            }
+            "new game" => {
+                println!(
+                    "Are you sure you want to start a new game? \
+                    This will delete your saved game. (yes/no)"
+                );
+                print!("> ");
+                io::stdout().flush().expect("flush failed");
+
+                let mut confirm = String::new();
+                io::stdin().read_line(&mut confirm).unwrap();
+                if confirm.trim().eq_ignore_ascii_case("yes") {
+                    delete_game_state(&client).await;
+                    game_state = registration::handle_registration(client.clone()).await?;
+                }
+            }
+            cmd if cmd.starts_with("go to ") => {
+                let moon = cmd.trim_start_matches("go to ").trim();
+                handle_go_to(&mut game_state, moon);
+            }
+            cmd if cmd.starts_with("buy ") => {
+                handle_buy(&mut game_state, cmd);
+            }
+            _ => {
+                println!("❓ Command not recognized. Type 'help' for the list of commands.");
+            }
+        }
+    }
+}
 
 pub fn handle_moons() {
     println!("Visitable: {}", MOONS.join(", "));
@@ -137,5 +194,12 @@ pub async fn handle_load(client: Arc<Client>, game_state: &mut GameState) {
             println!("Error loading game state: {}", e);
             println!("-------------------------------------------------------------");
         }
+    }
+}
+
+pub async fn delete_game_state(client: &Client) {
+    match mongodb::delete_game_state(client).await {
+        Ok(_) => println!("Game state deleted successfully."),
+        Err(e) => println!("Failed to delete game state: {}", e),
     }
 }

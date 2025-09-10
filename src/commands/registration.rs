@@ -5,46 +5,33 @@ use std::io::{self, Write};
 use std::sync::Arc;
 use std::{thread, time};
 
-pub async fn handle_registration(client: Arc<Client>) -> GameState {
-    println!("Booting Terminal Company OS...");
-    println!("Welcome to Terminal Company.");
-
-    let suspicious_documents = vec![
-        "DOC: INSUFFICIENT FUNDS, LIABILITIES OUTWEIGH ASSETS",
-        "DOC: COMPANY POLICY 11B-3, ARTICLE 4: NO REFUNDS ON DECEASED OPERATORS",
-        "DOC: CONTRACTOR DEBT ACCUMULATED: 92837 CREDITS",
-        "DOC: LETHAL COMPANY AGREEMENT VERIFIED: MINIMUM REVENUE MET",
-        "DOC: ALL ASSETS ARE THE SOLE PROPERTY OF THE COMPANY",
-        "DOC: PERSONNEL DATA RETENTION: 98.7% CHANCE OF MORTALITY",
-        "DOC: DEBT COLLECTION AUTOMATION IN PROGRESS",
-    ];
-
-    for doc in suspicious_documents {
-        println!("{}", doc);
-        thread::sleep(time::Duration::from_millis(400));
-    }
-
-    println!("-------------------------------------------------------------");
-    println!("Before proceeding, you must accept the Terms and Conditions.");
-    println!("Type 'ACCEPT' to continue or 'DENY' to exit.");
-
-    loop {
-        print!("> ");
+pub async fn initialize_game(client: Arc<Client>) -> Result<GameState, Box<dyn std::error::Error>> {
+    if let Ok(Some(loaded_state)) = mongodb::load_game_state(&client).await {
+        println!("-------------------------------------------------------------");
+        println!("A game state was found.");
+        print!("Do you want to continue a saved game? (yes/no) > ");
         io::stdout().flush().unwrap();
-
         let mut input = String::new();
         io::stdin().read_line(&mut input).unwrap();
-        let input = input.trim().to_uppercase();
+        let input = input.trim().to_lowercase();
 
-        if input == "ACCEPT" {
-            println!("Thank you. Access granted.");
-            break;
-        } else if input == "DENY" {
-            println!("Access denied. Shutting down...");
-            std::process::exit(0);
+        if input == "yes" || input == "y" {
+            println!("Continuing saved game...");
+            return Ok(loaded_state);
         } else {
-            println!("Please type 'ACCEPT' or 'DENY'.");
+            println!("Starting a new game...");
         }
+    }
+
+    handle_registration(client).await
+}
+
+pub async fn handle_registration(
+    client: Arc<Client>,
+) -> Result<GameState, Box<dyn std::error::Error>> {
+    if !handle_intro().await {
+        println!("Exiting game...");
+        std::process::exit(0);
     }
 
     println!("-------------------------------------------------------------");
@@ -63,6 +50,7 @@ pub async fn handle_registration(client: Arc<Client>) -> GameState {
     let role = role.trim().to_string();
 
     let game_state = GameState {
+        id: Some("game_state".to_string()),
         players: vec![Player {
             name,
             role,
@@ -84,5 +72,48 @@ pub async fn handle_registration(client: Arc<Client>) -> GameState {
         .await
         .expect("Failed to save initial game state.");
 
-    game_state
+    Ok(game_state)
+}
+
+pub async fn handle_intro() -> bool {
+    println!("Booting Terminal Company OS...");
+    println!("Welcome to Terminal Company.");
+
+    let suspicious_documents = vec![
+        "DOC: INSUFFICIENT FUNDS, LIABILITIES OUTWEIGH ASSETS",
+        "DOC: COMPANY POLICY 11B-3, ARTICLE 4: NO REFUNDS ON DECEASED OPERATORS",
+        "DOC: CONTRACTOR DEBT ACCUMULATED: 92837 CREDITS",
+        "DOC: LETHAL COMPANY AGREEMENT VERIFIED: MINIMUM REVENUE MET",
+        "DOC: ALL ASSETS ARE THE SOLE PROPERTY OF THE COMPANY",
+        "DOC: PERSONNEL DATA RETENTION: 98.7% CHANCE OF MORTALITY",
+        "DOC: DEBT COLLECTION AUTOMATION IN PROGRESS",
+    ];
+
+    for doc in suspicious_documents {
+        println!("{}", doc);
+        thread::sleep(time::Duration::from_millis(200));
+    }
+
+    println!("-------------------------------------------------------------");
+    println!("Before proceeding, you must accept the Terms and Conditions.");
+    println!("Type 'ACCEPT' to continue or 'DENY' to exit.");
+
+    loop {
+        print!("> ");
+        io::stdout().flush().unwrap();
+
+        let mut input = String::new();
+        io::stdin().read_line(&mut input).unwrap();
+        let input = input.trim().to_uppercase();
+
+        if input == "ACCEPT" {
+            println!("Thank you. Access granted.");
+            return true;
+        } else if input == "DENY" {
+            println!("Access denied. Shutting down...");
+            return false;
+        } else {
+            println!("Please type 'ACCEPT' or 'DENY'.");
+        }
+    }
 }

@@ -1,80 +1,104 @@
 use crate::models::entities::GameState;
+use log::{debug, error, info, warn};
 use mongodb::bson::doc;
 use mongodb::options::ReplaceOptions;
-use mongodb::{Client, Collection, options::ClientOptions};
+use mongodb::{Client, options::ClientOptions};
 use std::env;
-use std::io;
-use std::sync::Arc;
 
-pub async fn init_db() -> io::Result<Arc<Client>> {
-    let uri = env::var("MONGODB_URI").unwrap_or_else(|_| "mongodb://localhost:27017".into());
-
-    let client_options = ClientOptions::parse(&uri).await.map_err(|e| {
-        io::Error::new(
-            io::ErrorKind::Other,
-            format!("Failed to parse connection string: {}", e),
-        )
-    })?;
-
-    let client = Client::with_options(client_options).map_err(|e| {
-        io::Error::new(
-            io::ErrorKind::Other,
-            format!("Failed to create client: {}", e),
-        )
-    })?;
+pub async fn init_db() -> Result<Client, Box<dyn std::error::Error>> {
+    let uri = env::var("MONGODB_URI").unwrap_or_else(|_| "mongodb://localhost:27017".to_string());
+    let options = ClientOptions::parse(&uri).await?;
+    let client = Client::with_options(options)?;
 
     ensure_collection_exists(&client, "terminal_company", "game_state").await?;
 
-    Ok(Arc::new(client))
+    info!("✅ Connessione a MongoDB stabilita su {}", uri);
+    Ok(client)
 }
 
 async fn ensure_collection_exists(
     client: &Client,
     db_name: &str,
     coll_name: &str,
-) -> io::Result<()> {
+) -> Result<(), Box<dyn std::error::Error>> {
     let db = client.database(db_name);
-    let names: Vec<String> = db.list_collection_names().await.map_err(|e| {
-        io::Error::new(
-            io::ErrorKind::Other,
-            format!("Failed to list collections: {}", e),
-        )
-    })?;
+    let collections = db.list_collection_names().await?;
 
-    if !names.iter().any(|n| n == coll_name) {
-        db.create_collection(coll_name).await.map_err(|e| {
-            io::Error::new(
-                io::ErrorKind::Other,
-                format!("Failed to create collection: {}", e),
-            )
-        })?;
+    if !collections.contains(&coll_name.to_string()) {
+        db.create_collection(coll_name).await?;
+        info!(
+            "📦 Collection '{}' created in database '{}'",
+            coll_name, db_name
+        );
+
+        let coll = db.collection::<GameState>(coll_name);
+        coll.insert_one(GameState::default()).await?;
+        info!("Inserted initial game_state document.");
     }
+
     Ok(())
 }
 
-pub async fn save_game_state(client: &Client, game_state: &GameState) -> io::Result<()> {
-    let collection = client.database("terminal_company").collection::<GameState>("game_state");
-    
-    // Per un'applicazione a giocatore singolo, possiamo usare un ID fisso per sovrascrivere.
+pub async fn save_game_state(
+    client: &Client,
+    game_state: &GameState,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let db = client.database("terminal_company");
+    let collection = db.collection::<GameState>("game_state");
+
     let filter = doc! { "_id": "game_state" };
-    let opts = ReplaceOptions::builder().upsert(true).build();
-    
-    collection
+    let options = ReplaceOptions::builder().upsert(true).build();
+
+    match collection
         .replace_one(filter, game_state)
+        .with_options(options)
         .await
-        .map_err(|e| io::Error::new(io::ErrorKind::Other, format!("Failed to save game state: {}", e)))?;
-        
-    Ok(())
+    {
+        Ok(result) => {
+            if result.matched_count == 0 && result.upserted_id.is_some() {
+                info!("New game_state inserted (upsert).");
+            } else {
+                info!("game_state updated.");
+            }
+            Ok(())
+        }
+        Err(e) => {
+            error!("Error saving game_state: {:?}", e);
+            Err(Box::new(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                "Error saving game_state",
+            )))
+        }
+    }
 }
 
-pub async fn load_game_state(client: &Client) -> io::Result<Option<GameState>> {
-    let collection = client.database("terminal_company").collection::<GameState>("game_state");
-    let filter = doc! { "_id": "game_state" };
-    
-    let result = collection
-        .find_one(filter)
-        .await
-        .map_err(|e| io::Error::new(io::ErrorKind::Other, format!("Failed to load game state: {}", e)))?;
-        
-    Ok(result)
+pub async fn load_game_state(
+    client: &Client,
+) -> Result<Option<GameState>, Box<dyn std::error::Error>> {
+    let db = client.database("terminal_company");
+    let collection = db.collection::<GameState>("game_state");
+
+    match collection.find_one(doc! { "_id": "game_state" }).await {
+        Ok(game_state) => Ok(game_state),
+        Err(e) => {
+            error!("❌ Errore durante il caricamento di game_state: {:?}", e);
+            Err(Box::new(e))
+        }
+    }
+}
+
+pub async fn delete_game_state(client: &Client) -> Result<(), Box<dyn std::error::Error>> {
+    let db = client.database("terminal_company");
+    let collection = db.collection::<GameState>("game_state");
+
+    match collection.delete_one(doc! { "_id": "game_state" }).await {
+        Ok(_) => {
+            info!("🗑️ game_state eliminato.");
+            Ok(())
+        }
+        Err(e) => {
+            error!("❌ Errore durante l'eliminazione di game_state: {:?}", e);
+            Err(Box::new(e))
+        }
+    }
 }
