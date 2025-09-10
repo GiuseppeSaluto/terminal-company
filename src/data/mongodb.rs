@@ -1,18 +1,18 @@
 use crate::models::entities::GameState;
-use log::{debug, error, info, warn};
+use log::{error, info};
 use mongodb::bson::doc;
 use mongodb::options::ReplaceOptions;
 use mongodb::{Client, options::ClientOptions};
 use std::env;
 
 pub async fn init_db() -> Result<Client, Box<dyn std::error::Error>> {
-    let uri = env::var("MONGODB_URI").unwrap_or_else(|_| "mongodb://localhost:27017".to_string());
+    let uri = env::var("MONGODB_URI")?;
     let options = ClientOptions::parse(&uri).await?;
     let client = Client::with_options(options)?;
 
     ensure_collection_exists(&client, "terminal_company", "game_state").await?;
 
-    info!("✅ Connessione a MongoDB stabilita su {}", uri);
+    info!("✅Connection to MongoDB established on {}", uri);
     Ok(client)
 }
 
