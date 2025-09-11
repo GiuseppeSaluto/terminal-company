@@ -49,15 +49,17 @@ pub async fn handle_registration(
     io::stdin().read_line(&mut role).unwrap();
     let role = role.trim().to_string();
 
+    let player = Player {
+        name,
+        role,
+        hp: 100,
+        inventory: Vec::new(),
+        credits: 30,
+    };
+
     let game_state = GameState {
         id: Some("game_state".to_string()),
-        players: vec![Player {
-            name,
-            role,
-            hp: 100,
-            inventory: Vec::new(),
-            credits: 30,
-        }],
+        players: vec![player],
         ship: Ship {
             location: "Company".to_string(),
             number_operators_alive: 1,
@@ -66,6 +68,7 @@ pub async fn handle_registration(
         },
         turn_number: 1,
         is_game_over: false,
+        scan_data: None,
     };
 
     mongodb::save_game_state(&client, &game_state)

@@ -1,63 +1,45 @@
-use std::io::{self, Write};
-use std::sync::Arc;
-
 use crate::commands::registration;
 use crate::data::mongodb;
-use crate::models::entities::GameState;
+use crate::models::entities::{GameState, ScanData};
 use crate::models::lists::{BESTIARY, MOONS, STORE_ITEMS};
+use crate::utils::shortcut::read_and_normalize_input;
 use ::mongodb::Client;
-use rand;
+use rand::{self, Rng};
+use std::sync::Arc;
 
-pub async fn run_repl(client: Arc<Client>, mut game_state: GameState) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn run_repl(
+    client: Arc<Client>,
+    mut game_state: GameState,
+) -> Result<(), Box<dyn std::error::Error>> {
     loop {
-        print!("> ");
-        io::stdout().flush().expect("flush failed");
-
-        let mut input = String::new();
-        if io::stdin().read_line(&mut input).is_err() {
-            println!("⚠️ Error reading input.");
-            continue;
-        }
-        let input = input.trim();
-
-        match input {
-            "" => {}
-            "moons" => handle_moons(),
-            "store" => handle_store(),
-            "inventory" => handle_inv(&game_state),
-            "scan" => handle_scan(),
-            "bestiary" => handle_best(),
-            "help" => handle_help(),
-            "save" => {
-                handle_save(client.clone(), &game_state).await;
-            }
-            "load" => {
-                handle_load(client.clone(), &mut game_state).await;
-            }
-            "new game" => {
-                println!(
-                    "Are you sure you want to start a new game? \
-                    This will delete your saved game. (yes/no)"
-                );
-                print!("> ");
-                io::stdout().flush().expect("flush failed");
-
-                let mut confirm = String::new();
-                io::stdin().read_line(&mut confirm).unwrap();
-                if confirm.trim().eq_ignore_ascii_case("yes") {
-                    delete_game_state(&client).await;
-                    game_state = registration::handle_registration(client.clone()).await?;
+        if let Some(input) = read_and_normalize_input() {
+            match input.as_str() {
+                "" => {}
+                "moons" => handle_moons(),
+                "store" => handle_store(),
+                "inventory" => handle_inv(&game_state),
+                "scan" => handle_scan(&mut game_state),
+                "bestiary" => handle_best(),
+                "help" => handle_help(),
+                "save" => handle_save(client.clone(), &game_state).await,
+                "load" => handle_load(client.clone(), &mut game_state).await,
+                "new game" => {
+                    println!("Are you sure you want to start a new game? (yes/no)");
+                    if let Some(confirm) = read_and_normalize_input() {
+                        if confirm == "yes" {
+                            delete_game_state(&client).await;
+                            game_state = registration::handle_registration(client.clone()).await?;
+                        }
+                    }
                 }
-            }
-            cmd if cmd.starts_with("go to ") => {
-                let moon = cmd.trim_start_matches("go to ").trim();
-                handle_go_to(&mut game_state, moon);
-            }
-            cmd if cmd.starts_with("buy ") => {
-                handle_buy(&mut game_state, cmd);
-            }
-            _ => {
-                println!("❓ Command not recognized. Type 'help' for the list of commands.");
+                cmd if cmd.starts_with("go to ") => {
+                    let moon = cmd.trim_start_matches("go to ").trim();
+                    handle_go_to(&mut game_state, moon);
+                }
+                cmd if cmd.starts_with("buy ") => {
+                    handle_buy(&mut game_state, &cmd);
+                }
+                _ => println!("❓ Command not recognized. Type 'help' for the list of commands."),
             }
         }
     }
@@ -108,13 +90,50 @@ pub fn handle_inv(game_state: &GameState) {
     println!("-------------------------------------------------------------");
 }
 
-pub fn handle_scan() {
-    println!("environment scan...");
-    println!("enemies detected: {}", rand::random::<u8>() % 5);
-    println!(
-        "Total value of objects: {} credits",
-        rand::random::<u16>() % 1000
-    );
+pub fn handle_scan(game_state: &mut GameState) {
+    if game_state.ship.location == "Company" {
+        println!("-------------------------------------------------------------");
+        println!("You can't scan anything while at the Company building.");
+        println!("Use 'go to [moon name]' to travel to a moon.");
+        println!("-------------------------------------------------------------");
+        return;
+    }
+
+    if let Some(scan_data) = &game_state.scan_data {
+        println!("-------------------------------------------------------------");
+        println!(
+            "Scan data for {} is already available:",
+            game_state.ship.location
+        );
+        println!("- Weather: {}", scan_data.weather);
+        println!("- Threat Level: {}%", scan_data.threat_level);
+        println!("- Estimated Scrap Value: {} credits", scan_data.scrap_value);
+        println!("-------------------------------------------------------------");
+    } else {
+        let mut rng = rand::rng();
+
+        let weather_conditions = ["Clear", "Rainy", "Foggy", "Stormy", "Eclipsed"];
+        let random_weather =
+            weather_conditions[rng.random_range(0..weather_conditions.len())].to_string();
+        let random_threat_level = rng.random_range(1..101);
+        let random_scrap_value = rng.random_range(100..1001);
+
+        let scan_data = ScanData {
+            weather: random_weather,
+            threat_level: random_threat_level,
+            scrap_value: random_scrap_value,
+        };
+
+        game_state.scan_data = Some(scan_data.clone());
+
+        println!("-------------------------------------------------------------");
+        println!("Scanning environment on {}...", game_state.ship.location);
+        println!("Scan data generated:");
+        println!("- Weather: {}", scan_data.weather);
+        println!("- Threat Level: {}%", scan_data.threat_level);
+        println!("- Estimated Scrap Value: {} credits", scan_data.scrap_value);
+        println!("-------------------------------------------------------------");
+    }
 }
 
 pub fn handle_best() {
@@ -135,6 +154,7 @@ pub fn handle_help() {
     println!("inventory - Show your inventory");
     println!("save - Save the game state");
     println!("load - Load the game state");
+    println!("new game - Delete the game state");
     println!("help - Show this help");
 }
 
@@ -142,7 +162,10 @@ pub fn handle_buy(game_state: &mut GameState, cmd: &str) {
     let item_name = cmd.trim_start_matches("buy ").trim();
     let player = &mut game_state.players[0];
 
-    if let Some(item) = STORE_ITEMS.iter().find(|i| i.name.eq_ignore_ascii_case(item_name)) {
+    if let Some(item) = STORE_ITEMS
+        .iter()
+        .find(|i| i.name.eq_ignore_ascii_case(item_name))
+    {
         if player.credits >= item.price {
             player.credits -= item.price;
             player.inventory.push(item.clone());

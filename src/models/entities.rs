@@ -31,6 +31,7 @@ pub struct GameState {
     pub ship: Ship,
     pub turn_number: u32,
     pub is_game_over: bool,
+    pub scan_data: Option<ScanData>
 }
 
 impl Default for GameState {
@@ -46,6 +47,14 @@ impl Default for GameState {
             },
             turn_number: 1,
             is_game_over: false,
+            scan_data: None,
         }
     }
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug)]
+pub struct ScanData {
+    pub weather: String,
+    pub threat_level: u32,
+    pub scrap_value: u32,
 }

@@ -81,7 +81,7 @@ pub async fn load_game_state(
     match collection.find_one(doc! { "_id": "game_state" }).await {
         Ok(game_state) => Ok(game_state),
         Err(e) => {
-            error!("❌ Errore durante il caricamento di game_state: {:?}", e);
+            error!("❌Error loading game_state: {:?}", e);
             Err(Box::new(e))
         }
     }
@@ -93,11 +93,11 @@ pub async fn delete_game_state(client: &Client) -> Result<(), Box<dyn std::error
 
     match collection.delete_one(doc! { "_id": "game_state" }).await {
         Ok(_) => {
-            info!("🗑️ game_state eliminato.");
+            info!("🗑️ game_state deleted.");
             Ok(())
         }
         Err(e) => {
-            error!("❌ Errore durante l'eliminazione di game_state: {:?}", e);
+            error!("❌ Error deleting game_state: {:?}", e);
             Err(Box::new(e))
         }
     }

@@ -2,6 +2,7 @@ use crate::commands::registration;
 use crate::data::mongodb;
 use crate::commands::commands_fn::run_repl;
 use std::sync::Arc;
+use dotenv::dotenv;
 
 mod commands {
     pub mod commands_fn;
@@ -15,8 +16,13 @@ mod models {
     pub mod lists;
 }
 
+mod utils {
+    pub mod shortcut;
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    dotenv().ok();
     env_logger::init();
 
     let client = Arc::new(mongodb::init_db().await?);
