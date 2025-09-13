@@ -1,9 +1,9 @@
 use crate::commands::registration;
 use crate::data::mongodb;
-use crate::models::entities::{GameState, ScanData};
-use crate::models::lists::{BESTIARY, MOONS, STORE_ITEMS};
 use crate::data::mongodb::load_collect_config;
 use crate::models::collect_events::CollectCreditsEvent;
+use crate::models::entities::{GameState, ScanData};
+use crate::models::lists::{BESTIARY, MOONS, STORE_ITEMS};
 use crate::utils::shortcut::read_and_normalize_input;
 use ::mongodb::Client;
 use rand::{self, Rng};
@@ -46,7 +46,7 @@ pub async fn run_repl(
                 }
                 cmd if cmd.starts_with("buy ") => {
                     handle_buy(&mut game_state, &cmd);
-                }           
+                }
                 _ => println!("❓ Command not recognized. Type 'help' for the list of commands."),
             }
         }
@@ -117,7 +117,7 @@ pub fn handle_scan(game_state: &mut GameState) {
         return;
     }
 
-    if let Some(scan_data) = &game_state.scan_data {
+    if let Some(scan_data) = game_state.scan_data.get(&game_state.ship.location) {
         println_separator();
         println!(
             "Scan data for {} is already available:",
@@ -142,7 +142,9 @@ pub fn handle_scan(game_state: &mut GameState) {
             scrap_value: random_scrap_value,
         };
 
-        game_state.scan_data = Some(scan_data.clone());
+        game_state
+            .scan_data
+            .insert(game_state.ship.location.clone(), scan_data.clone());
 
         println_separator();
         println!("Scanning environment on {}...", game_state.ship.location);
@@ -155,14 +157,17 @@ pub fn handle_scan(game_state: &mut GameState) {
 }
 
 async fn handle_collect(client: &Client, game_state: &mut GameState) {
-    if let Some(scan) = &game_state.scan_data {
+    let location = &game_state.ship.location;
+
+    if let Some(scan_data) = game_state.scan_data.get(location) {
         match load_collect_config(client).await {
             Ok(config) => {
                 let event = CollectCreditsEvent {
-                    scan_data: scan,
+                    scan_data,
                     player_bonus: 0,
                     config: &config,
                 };
+
                 match event.attempt() {
                     Some(credits) => {
                         println!("✅ You found {} credits!", credits);
@@ -171,10 +176,15 @@ async fn handle_collect(client: &Client, game_state: &mut GameState) {
                     None => println!("❌ No credits found this time."),
                 }
             }
-            Err(e) => println!("⚠️ Error loading collect config: {}", e),
+            Err(e) => {
+                println!("⚠️ Error loading collect config: {}", e);
+            }
         }
     } else {
-        println!("⚠️ You need to scan a location first!");
+        println!(
+            "⚠️ No scan data available for {}. Use 'scan' first.",
+            location
+        );
     }
 }
 

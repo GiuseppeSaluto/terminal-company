@@ -135,7 +135,7 @@ pub async fn load_collect_config(
         Ok(config)
     } else {
         let mut default_config = CollectConfig::default();
-        // Assicurati che _id sia impostato
+        
         default_config.id = Some("collect_config".to_string());
         coll.insert_one(default_config.clone()).await?;
         Ok(default_config)

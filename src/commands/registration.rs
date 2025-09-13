@@ -68,7 +68,7 @@ pub async fn handle_registration(
         },
         turn_number: 1,
         is_game_over: false,
-        scan_data: None,
+        scan_data: std::collections::HashMap::new(),
     };
 
     mongodb::save_game_state(&client, &game_state)

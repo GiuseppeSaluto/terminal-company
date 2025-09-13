@@ -33,7 +33,7 @@ pub struct GameState {
     pub ship: Ship,
     pub turn_number: u32,
     pub is_game_over: bool,
-    pub scan_data: Option<ScanData>,
+    pub scan_data: HashMap<String, ScanData>,
 }
 
 impl Default for GameState {
@@ -49,7 +49,7 @@ impl Default for GameState {
             },
             turn_number: 1,
             is_game_over: false,
-            scan_data: None,
+            scan_data: HashMap::new(),
         }
     }
 }
