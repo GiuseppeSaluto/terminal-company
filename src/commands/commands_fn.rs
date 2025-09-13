@@ -25,7 +25,7 @@ pub async fn run_repl(
                 "save" => handle_save(client.clone(), &game_state).await,
                 "load" => handle_load(client.clone(), &mut game_state).await,
                 "quit" | "exit" => {
-                    println!("Exiting game. Goodbye!");
+                    println!("Exiting game. Goodbye {}!", game_state.players[0].name);
                     return Ok(());
                 }
                 "new game" => {
