@@ -90,8 +90,12 @@ pub fn handle_inv(game_state: &GameState) {
     println!("-------------------------------------------------------------");
 }
 
+pub fn is_at_company(game_state: &GameState) -> bool {
+    game_state.ship.location.eq_ignore_ascii_case("Company")
+}
+
 pub fn handle_scan(game_state: &mut GameState) {
-    if game_state.ship.location == "Company" {
+    if is_at_company(game_state) {
         println!("-------------------------------------------------------------");
         println!("You can't scan anything while at the Company building.");
         println!("Use 'go to [moon name]' to travel to a moon.");
