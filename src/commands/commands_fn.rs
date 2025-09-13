@@ -20,9 +20,14 @@ pub async fn run_repl(
                 "inventory" => handle_inv(&game_state),
                 "scan" => handle_scan(&mut game_state),
                 "bestiary" => handle_best(),
+                "location" => handle_location(&game_state),
                 "help" => handle_help(),
                 "save" => handle_save(client.clone(), &game_state).await,
                 "load" => handle_load(client.clone(), &mut game_state).await,
+                "quit" | "exit" => {
+                    println!("Exiting game. Goodbye!");
+                    return Ok(());
+                }
                 "new game" => {
                     println!("Are you sure you want to start a new game? (yes/no)");
                     if let Some(confirm) = read_and_normalize_input() {
@@ -38,7 +43,7 @@ pub async fn run_repl(
                 }
                 cmd if cmd.starts_with("buy ") => {
                     handle_buy(&mut game_state, &cmd);
-                }
+                }           
                 _ => println!("❓ Command not recognized. Type 'help' for the list of commands."),
             }
         }
@@ -53,29 +58,35 @@ pub fn handle_go_to(game_state: &mut GameState, moon: &str) {
     if MOONS.iter().any(|m| m.eq_ignore_ascii_case(moon)) {
         game_state.ship.location = moon.to_string();
         println!("Journey to {} underway...", moon);
-        println!("Your current location is: {}", game_state.ship.location);
+        handle_location(game_state);
     } else {
         println!("'{}' Moon not available.", moon);
     }
+}
+
+pub fn handle_location(game_state: &GameState) {
+    println_separator();
+    println!("Your current location is: {}", game_state.ship.location);
+    println_separator();
 }
 
 pub fn handle_store() {
     println!("Available Items:");
     for item in STORE_ITEMS.iter() {
         let item = item;
-        println!("-------------------------------------------------------------");
+        println_separator();
         println!("- {}:", item.name);
         println!("  - Price: {} credits", item.price);
         println!("  - Weight: {}", item.weight);
         println!("  - Description: {}", item.description);
     }
-    println!("-------------------------------------------------------------");
+    println_separator();
 }
 
 pub fn handle_inv(game_state: &GameState) {
-    println!("-------------------------------------------------------------");
+    println_separator();
     println!("Your Inventory Status:");
-    println!("-------------------------------------------------------------");
+    println_separator();
     let player = &game_state.players[0];
 
     if player.inventory.is_empty() {
@@ -87,7 +98,7 @@ pub fn handle_inv(game_state: &GameState) {
             println!("  - Description: {}", item.description);
         }
     }
-    println!("-------------------------------------------------------------");
+    println_separator();
 }
 
 pub fn is_at_company(game_state: &GameState) -> bool {
@@ -96,15 +107,15 @@ pub fn is_at_company(game_state: &GameState) -> bool {
 
 pub fn handle_scan(game_state: &mut GameState) {
     if is_at_company(game_state) {
-        println!("-------------------------------------------------------------");
+        println_separator();
         println!("You can't scan anything while at the Company building.");
         println!("Use 'go to [moon name]' to travel to a moon.");
-        println!("-------------------------------------------------------------");
+        println_separator();
         return;
     }
 
     if let Some(scan_data) = &game_state.scan_data {
-        println!("-------------------------------------------------------------");
+        println_separator();
         println!(
             "Scan data for {} is already available:",
             game_state.ship.location
@@ -112,7 +123,7 @@ pub fn handle_scan(game_state: &mut GameState) {
         println!("- Weather: {}", scan_data.weather);
         println!("- Threat Level: {}%", scan_data.threat_level);
         println!("- Estimated Scrap Value: {} credits", scan_data.scrap_value);
-        println!("-------------------------------------------------------------");
+        println_separator();
     } else {
         let mut rng = rand::rng();
 
@@ -130,13 +141,13 @@ pub fn handle_scan(game_state: &mut GameState) {
 
         game_state.scan_data = Some(scan_data.clone());
 
-        println!("-------------------------------------------------------------");
+        println_separator();
         println!("Scanning environment on {}...", game_state.ship.location);
         println!("Scan data generated:");
         println!("- Weather: {}", scan_data.weather);
         println!("- Threat Level: {}%", scan_data.threat_level);
         println!("- Estimated Scrap Value: {} credits", scan_data.scrap_value);
-        println!("-------------------------------------------------------------");
+        println_separator();
     }
 }
 
@@ -151,6 +162,7 @@ pub fn handle_help() {
     println!("Commands available:");
     println!("moons - Lists visitable planets");
     println!("go to [moon name] - Travel to a planet");
+    println!("location - Show your current location");
     println!("store - Show the Store Items");
     println!("scan - Scan the environment");
     println!("bestiary - Show scannable creatures");
@@ -160,6 +172,7 @@ pub fn handle_help() {
     println!("load - Load the game state");
     println!("new game - Delete the game state");
     println!("help - Show this help");
+    println!("quit/exit - Exit the game");
 }
 
 pub fn handle_buy(game_state: &mut GameState, cmd: &str) {
@@ -173,26 +186,26 @@ pub fn handle_buy(game_state: &mut GameState, cmd: &str) {
         if player.credits >= item.price {
             player.credits -= item.price;
             player.inventory.push(item.clone());
-            println!("-------------------------------------------------------------");
+            println_separator();
             println!(
                 "You have purchased '{}' for {} credits.",
                 item.name, item.price
             );
             println!("Your remaining credits: {}", player.credits);
-            println!("-------------------------------------------------------------");
+            println_separator();
         } else {
-            println!("-------------------------------------------------------------");
+            println_separator();
             println!("Not enough credits to purchase '{}'.", item.name);
             println!(
                 "You need {} credits, but you have only {}.",
                 item.price, player.credits
             );
-            println!("-------------------------------------------------------------");
+            println_separator();
         }
     } else {
-        println!("-------------------------------------------------------------");
+        println_separator();
         println!("'{}' item not available.", item_name);
-        println!("-------------------------------------------------------------");
+        println_separator();
     }
 }
 
@@ -207,19 +220,19 @@ pub async fn handle_load(client: Arc<Client>, game_state: &mut GameState) {
     match mongodb::load_game_state(&client).await {
         Ok(Some(state)) => {
             *game_state = state;
-            println!("-------------------------------------------------------------");
+            println_separator();
             println!("Game state loaded successfully.");
-            println!("-------------------------------------------------------------");
+            println_separator();
         }
         Ok(None) => {
-            println!("-------------------------------------------------------------");
+            println_separator();
             println!("No saved game state found.");
-            println!("-------------------------------------------------------------");
+            println_separator();
         }
         Err(e) => {
-            println!("-------------------------------------------------------------");
+            println_separator();
             println!("Error loading game state: {}", e);
-            println!("-------------------------------------------------------------");
+            println_separator();
         }
     }
 }
@@ -229,4 +242,8 @@ pub async fn delete_game_state(client: &Client) {
         Ok(_) => println!("Game state deleted successfully."),
         Err(e) => println!("Failed to delete game state: {}", e),
     }
+}
+
+pub fn println_separator() {
+    println!("-------------------------------------------------------------");
 }
