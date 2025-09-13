@@ -2,6 +2,8 @@ use crate::commands::registration;
 use crate::data::mongodb;
 use crate::models::entities::{GameState, ScanData};
 use crate::models::lists::{BESTIARY, MOONS, STORE_ITEMS};
+use crate::data::mongodb::load_collect_config;
+use crate::models::collect_events::CollectCreditsEvent;
 use crate::utils::shortcut::read_and_normalize_input;
 use ::mongodb::Client;
 use rand::{self, Rng};
@@ -19,6 +21,7 @@ pub async fn run_repl(
                 "store" => handle_store(),
                 "inventory" => handle_inv(&game_state),
                 "scan" => handle_scan(&mut game_state),
+                "collect" => handle_collect(&client, &mut game_state).await,
                 "bestiary" => handle_best(),
                 "location" => handle_location(&game_state),
                 "help" => handle_help(),
@@ -151,6 +154,30 @@ pub fn handle_scan(game_state: &mut GameState) {
     }
 }
 
+async fn handle_collect(client: &Client, game_state: &mut GameState) {
+    if let Some(scan) = &game_state.scan_data {
+        match load_collect_config(client).await {
+            Ok(config) => {
+                let event = CollectCreditsEvent {
+                    scan_data: scan,
+                    player_bonus: 0,
+                    config: &config,
+                };
+                match event.attempt() {
+                    Some(credits) => {
+                        println!("✅ You found {} credits!", credits);
+                        game_state.players[0].credits += credits;
+                    }
+                    None => println!("❌ No credits found this time."),
+                }
+            }
+            Err(e) => println!("⚠️ Error loading collect config: {}", e),
+        }
+    } else {
+        println!("⚠️ You need to scan a location first!");
+    }
+}
+
 pub fn handle_best() {
     println!("scannable creatures:");
     for (name, desc) in BESTIARY {
@@ -165,6 +192,7 @@ pub fn handle_help() {
     println!("location - Show your current location");
     println!("store - Show the Store Items");
     println!("scan - Scan the environment");
+    println!("collect - Try to collect scrap credits");
     println!("bestiary - Show scannable creatures");
     println!("buy [item name] - Buy an item");
     println!("inventory - Show your inventory");

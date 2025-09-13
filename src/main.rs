@@ -14,6 +14,7 @@ mod data {
 mod models {
     pub mod entities;
     pub mod lists;
+    pub mod collect_events;
 }
 
 mod utils {

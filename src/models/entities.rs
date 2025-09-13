@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -31,7 +33,7 @@ pub struct GameState {
     pub ship: Ship,
     pub turn_number: u32,
     pub is_game_over: bool,
-    pub scan_data: Option<ScanData>
+    pub scan_data: Option<ScanData>,
 }
 
 impl Default for GameState {
@@ -57,4 +59,29 @@ pub struct ScanData {
     pub weather: String,
     pub threat_level: u32,
     pub scrap_value: u32,
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug)]
+pub struct CollectConfig {
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
+    pub base_chance: i32,
+    pub weather_mods: HashMap<String, i32>,
+}
+
+impl Default for CollectConfig {
+    fn default() -> Self {
+        let mut weather_mods = HashMap::new();
+        weather_mods.insert("Clear".to_string(), 20);
+        weather_mods.insert("Rainy".to_string(), -5);
+        weather_mods.insert("Foggy".to_string(), -10);
+        weather_mods.insert("Stormy".to_string(), -20);
+        weather_mods.insert("Eclipsed".to_string(), -30);
+
+        CollectConfig {
+            id: Some("collect_config".to_string()),
+            base_chance: 50,
+            weather_mods,
+        }
+    }
 }
