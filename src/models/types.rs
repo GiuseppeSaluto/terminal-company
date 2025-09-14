@@ -25,6 +25,36 @@ pub struct Item {
     pub weight: f32,
     pub description: String,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Monster {
+    pub name: String,
+    pub entity_type: String,
+    pub behavior: String,
+    pub danger_level: Option<String>,
+    pub power_level: f32,
+    pub spawn_condition: String,
+    pub moons: Vec<String>,
+    pub speed: Option<String>,
+    pub notes: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Bestiary {
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
+    pub monsters: Vec<Monster>,
+}
+
+impl Default for Bestiary {
+    fn default() -> Self {
+        Bestiary {
+            id: Some("bestiary".to_string()),
+            monsters: vec![],
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct GameState {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]

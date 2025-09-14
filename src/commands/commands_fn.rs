@@ -22,7 +22,7 @@ pub async fn run_repl(
                 "inventory" => handle_inv(&game_state),
                 "scan" => handle_scan(&mut game_state),
                 "collect" => handle_collect(&client, &mut game_state).await,
-                "bestiary" => handle_best(),
+                "bestiary" => handle_monsters(),
                 "location" => handle_location(&game_state),
                 "help" => handle_help(),
                 "save" => handle_save(client.clone(), &game_state).await,
@@ -188,10 +188,10 @@ async fn handle_collect(client: &Client, game_state: &mut GameState) {
     }
 }
 
-pub fn handle_best() {
+pub fn handle_monsters() {
     println!("scannable creatures:");
-    for (name, desc) in BESTIARY {
-        println!("- {}: {}", name, desc);
+    for monster in BESTIARY.iter() {
+        println!("- {}: {}", monster.name, monster.notes.as_deref().unwrap_or("No description available."));
     }
 }
 

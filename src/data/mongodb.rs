@@ -1,4 +1,4 @@
-use crate::models::types::{CollectConfig, GameState};
+use crate::models::types::{CollectConfig, GameState, Bestiary};
 use log::{error, info};
 use mongodb::bson::doc;
 use mongodb::options::ReplaceOptions;
@@ -12,6 +12,7 @@ pub async fn init_db() -> Result<Client, Box<dyn std::error::Error>> {
 
     ensure_collection_exists(&client, "terminal_company", "game_state").await?;
     //ensure_collect_config_exists(&client).await?;
+    load_bestiary(&client).await?;
 
     info!("✅Connection to MongoDB established on {}", uri);
     Ok(client)
@@ -104,26 +105,6 @@ pub async fn delete_game_state(client: &Client) -> Result<(), Box<dyn std::error
     }
 }
 
-// async fn ensure_collect_config_exists(client: &Client) -> Result<(), Box<dyn std::error::Error>> {
-//     let db = client.database("terminal_company");
-//     let coll = db.collection::<CollectConfig>("game_config");
-
-//     let filter = mongodb::bson::doc! { "_id": "collect_config" };
-
-//     if coll.find_one(filter.clone()).await?.is_none() {
-//         let default_config = CollectConfig::default();
-
-//         let doc_coll = db.collection::<mongodb::bson::Document>("game_config");
-//         let mut doc = mongodb::bson::to_document(&default_config)?;
-//         doc.insert("_id", "collect_config");
-
-//         doc_coll.insert_one(doc).await?;
-//         info!("Inserted default collect_config document with _id='collect_config'.");
-//     }
-
-//     Ok(())
-// }
-
 pub async fn load_collect_config(
     client: &Client,
 ) -> Result<CollectConfig, Box<dyn std::error::Error>> {
@@ -139,5 +120,23 @@ pub async fn load_collect_config(
         default_config.id = Some("collect_config".to_string());
         coll.insert_one(default_config.clone()).await?;
         Ok(default_config)
+    }
+}
+
+pub async fn load_bestiary(
+    client: &Client,
+) -> Result<Bestiary, Box<dyn std::error::Error>> {
+    let db = client.database("terminal_company");
+    let coll = db.collection::<Bestiary>("bestiary");
+    let filter = doc! { "_id": "bestiary" };
+
+    if let Some(bestiary) = coll.find_one(filter.clone()).await? {
+        Ok(bestiary)
+    } else {
+        let mut default_bestiary = Bestiary::default();
+        default_bestiary.monsters = crate::models::lists::BESTIARY.to_vec();
+        default_bestiary.id = Some("bestiary".to_string());
+        coll.insert_one(default_bestiary.clone()).await?;
+        Ok(default_bestiary)
     }
 }
