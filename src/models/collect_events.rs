@@ -1,4 +1,4 @@
-use crate::models::entities::{CollectConfig, ScanData};
+use crate::models::types::{CollectConfig, ScanData};
 use rand::Rng;
 
 pub struct CollectCreditsEvent<'a> {

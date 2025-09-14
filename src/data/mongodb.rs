@@ -1,4 +1,4 @@
-use crate::models::entities::{CollectConfig, GameState};
+use crate::models::types::{CollectConfig, GameState};
 use log::{error, info};
 use mongodb::bson::doc;
 use mongodb::options::ReplaceOptions;

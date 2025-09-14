@@ -1,5 +1,5 @@
 use crate::data::mongodb;
-use crate::models::entities::{GameState, Player, Ship};
+use crate::models::types::{GameState, Player, Ship};
 use ::mongodb::Client;
 use std::io::{self, Write};
 use std::sync::Arc;

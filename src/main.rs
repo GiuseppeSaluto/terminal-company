@@ -12,7 +12,7 @@ mod data {
     pub mod mongodb;
 }
 mod models {
-    pub mod entities;
+    pub mod types;
     pub mod lists;
     pub mod collect_events;
 }

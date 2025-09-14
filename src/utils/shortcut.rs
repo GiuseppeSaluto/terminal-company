@@ -13,3 +13,7 @@ pub fn read_and_normalize_input() -> Option<String> {
     let input = input.trim().to_lowercase();
     Some(input)
 }
+
+pub fn println_separator() {
+    println!("-------------------------------------------------------------");
+}

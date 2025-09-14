@@ -2,9 +2,9 @@ use crate::commands::registration;
 use crate::data::mongodb;
 use crate::data::mongodb::load_collect_config;
 use crate::models::collect_events::CollectCreditsEvent;
-use crate::models::entities::{GameState, ScanData};
+use crate::models::types::{GameState, ScanData};
 use crate::models::lists::{BESTIARY, MOONS, STORE_ITEMS};
-use crate::utils::shortcut::read_and_normalize_input;
+use crate::utils::shortcut::{println_separator, read_and_normalize_input};
 use ::mongodb::Client;
 use rand::{self, Rng};
 use std::sync::Arc;
@@ -280,8 +280,4 @@ pub async fn delete_game_state(client: &Client) {
         Ok(_) => println!("Game state deleted successfully."),
         Err(e) => println!("Failed to delete game state: {}", e),
     }
-}
-
-pub fn println_separator() {
-    println!("-------------------------------------------------------------");
 }
