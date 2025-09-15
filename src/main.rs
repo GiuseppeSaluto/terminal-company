@@ -16,7 +16,6 @@ mod models {
     pub mod lists;
     pub mod collect_events;
 }
-
 mod utils {
     pub mod shortcut;
 }
