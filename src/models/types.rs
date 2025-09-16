@@ -3,6 +3,35 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 derive_struct! {
+pub struct GameState {
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    pub id: Option<String>,
+    pub players: Vec<Player>,
+    pub ship: Ship,
+    pub turn_number: u32,
+    pub is_game_over: bool,
+    pub scan_data: HashMap<String, ScanData>,
+}}
+
+impl Default for GameState {
+    fn default() -> Self {
+        GameState {
+            id: Some("game_state".to_string()),
+            players: vec![],
+            ship: Ship {
+                location: "Company".to_string(),
+                number_operators_alive: 0,
+                upgrades: vec![],
+                decorations: vec![],
+            },
+            turn_number: 1,
+            is_game_over: false,
+            scan_data: HashMap::new(),
+        }
+    }
+}
+
+derive_struct! {
 pub struct Player {
     pub name: String,
     pub role: String,
@@ -57,39 +86,11 @@ impl Default for Bestiary {
 }
 
 derive_struct! {
-pub struct GameState {
-    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
-    pub id: Option<String>,
-    pub players: Vec<Player>,
-    pub ship: Ship,
-    pub turn_number: u32,
-    pub is_game_over: bool,
-    pub scan_data: HashMap<String, ScanData>,
-}}
-
-impl Default for GameState {
-    fn default() -> Self {
-        GameState {
-            id: Some("game_state".to_string()),
-            players: vec![],
-            ship: Ship {
-                location: "Company".to_string(),
-                number_operators_alive: 0,
-                upgrades: vec![],
-                decorations: vec![],
-            },
-            turn_number: 1,
-            is_game_over: false,
-            scan_data: HashMap::new(),
-        }
-    }
-}
-
-derive_struct! {
     pub struct ScanData {
         pub weather: String,
         pub threat_level: u32,
         pub scrap_value: u32,
+        pub monsters: Vec<Monster>,
     }
 }
 

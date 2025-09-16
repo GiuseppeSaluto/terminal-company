@@ -140,6 +140,7 @@ pub fn handle_scan(game_state: &mut GameState) {
             weather: random_weather,
             threat_level: random_threat_level,
             scrap_value: random_scrap_value,
+            monsters: vec![],
         };
 
         game_state

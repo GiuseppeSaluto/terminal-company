@@ -1,13 +1,13 @@
 use crate::models::types::{CollectConfig, ScanData};
 use rand::Rng;
 
-pub struct CollectCreditsEvent<'a> {
-    pub scan_data: &'a ScanData,
+pub struct CollectCreditsEvent<'scan> {
+    pub scan_data: &'scan ScanData,
     pub player_bonus: i32,
-    pub config: &'a CollectConfig,
+    pub config: &'scan CollectConfig,
 }
 
-impl<'a> CollectCreditsEvent<'a> {
+impl<'scan> CollectCreditsEvent<'scan> {
     pub fn attempt(&self) -> Option<u32> {
         let mut chance = self.config.base_chance + self.player_bonus;
 
