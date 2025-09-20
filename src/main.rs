@@ -14,7 +14,8 @@ mod data {
 mod models {
     pub mod types;
     pub mod lists;
-    pub mod collect_events;
+    pub mod collect_credits;
+    pub mod scan_logic;
 }
 mod utils {
     pub mod shortcut;

@@ -90,6 +90,7 @@ derive_struct! {
         pub weather: String,
         pub threat_level: u32,
         pub scrap_value: u32,
+        #[serde(default)]
         pub monsters: Vec<Monster>,
     }
 }

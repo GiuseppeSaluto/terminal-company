@@ -1,9 +1,10 @@
 use crate::commands::registration;
-use crate::data::mongodb;
 use crate::data::mongodb::load_collect_config;
-use crate::models::collect_events::CollectCreditsEvent;
-use crate::models::types::{GameState, ScanData};
+use crate::data::mongodb::{self, load_bestiary};
+use crate::models::collect_credits::CollectCreditsEvent;
 use crate::models::lists::{BESTIARY, MOONS, STORE_ITEMS};
+use crate::models::scan_logic::generate_scan_data;
+use crate::models::types::{GameState, ScanData};
 use crate::utils::shortcut::{println_separator, read_and_normalize_input};
 use ::mongodb::Client;
 use rand::{self, Rng};
@@ -20,7 +21,7 @@ pub async fn run_repl(
                 "moons" => handle_moons(),
                 "store" => handle_store(),
                 "inventory" => handle_inv(&game_state),
-                "scan" => handle_scan(&mut game_state),
+                "scan" => handle_scan(&mut game_state, &client).await,
                 "collect" => handle_collect(&client, &mut game_state).await,
                 "bestiary" => handle_monsters(),
                 "location" => handle_location(&game_state),
@@ -108,7 +109,7 @@ pub fn is_at_company(game_state: &GameState) -> bool {
     game_state.ship.location.eq_ignore_ascii_case("Company")
 }
 
-pub fn handle_scan(game_state: &mut GameState) {
+pub async fn handle_scan(game_state: &mut GameState, client: &Client) {
     if is_at_company(game_state) {
         println_separator();
         println!("You can't scan anything while at the Company building.");
@@ -133,15 +134,22 @@ pub fn handle_scan(game_state: &mut GameState) {
         let weather_conditions = ["Clear", "Rainy", "Foggy", "Stormy", "Eclipsed"];
         let random_weather =
             weather_conditions[rng.random_range(0..weather_conditions.len())].to_string();
-        let random_threat_level = rng.random_range(1..101);
         let random_scrap_value = rng.random_range(100..1001);
 
-        let scan_data = ScanData {
-            weather: random_weather,
-            threat_level: random_threat_level,
-            scrap_value: random_scrap_value,
-            monsters: vec![],
+        let bestiary = match load_bestiary(client).await {
+            Ok(b) => b,
+            Err(e) => {
+                println!("⚠️ Error loading bestiary: {}", e);
+                return;
+            }
         };
+
+        let scan_data = generate_scan_data(
+            &game_state.ship.location,
+            &random_weather,
+            random_scrap_value,
+            &bestiary,
+        );
 
         game_state
             .scan_data
@@ -149,6 +157,15 @@ pub fn handle_scan(game_state: &mut GameState) {
 
         println_separator();
         println!("Scanning environment on {}...", game_state.ship.location);
+        println!("Monsters detected:");
+        for monster in &scan_data.monsters {
+            println!(
+                "- {} (Danger: {} | Power: {})",
+                monster.name,
+                monster.danger_level.as_deref().unwrap_or("Unknown"),
+                monster.power_level
+            );
+        }
         println!("Scan data generated:");
         println!("- Weather: {}", scan_data.weather);
         println!("- Threat Level: {}%", scan_data.threat_level);
@@ -169,12 +186,21 @@ async fn handle_collect(client: &Client, game_state: &mut GameState) {
                     config: &config,
                 };
 
-                match event.attempt() {
-                    Some(credits) => {
-                        println!("✅ You found {} credits!", credits);
-                        game_state.players[0].credits += credits;
+                let chance = event.calculate_chance();
+                println!("Chance to collect credits: {}%", chance);
+                println!("Do you want to attempt collecting? (yes/no)");
+                if let Some(confirm) = read_and_normalize_input() {
+                    if confirm.eq_ignore_ascii_case("yes") {
+                        match event.attempt() {
+                            Some(credits) => {
+                                println!("✅ You found {} credits!", credits);
+                                game_state.players[0].credits += credits;
+                            }
+                            None => println!("❌ No credits found this time."),
+                        }
+                    } else {
+                        println!("Collect attempt skipped.");
                     }
-                    None => println!("❌ No credits found this time."),
                 }
             }
             Err(e) => {
@@ -192,7 +218,14 @@ async fn handle_collect(client: &Client, game_state: &mut GameState) {
 pub fn handle_monsters() {
     println!("scannable creatures:");
     for monster in BESTIARY.iter() {
-        println!("- {}: {}", monster.name, monster.notes.as_deref().unwrap_or("No description available."));
+        println!(
+            "- {}: {}",
+            monster.name,
+            monster
+                .notes
+                .as_deref()
+                .unwrap_or("No description available.")
+        );
     }
 }
 
