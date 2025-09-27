@@ -61,7 +61,7 @@ pub struct Monster {
     pub name: String,
     pub entity_type: String,
     pub behavior: String,
-    pub danger_level: Option<String>,
+    pub danger_level: Option<u32>,
     pub power_level: f32,
     pub spawn_condition: String,
     pub moons: Vec<String>,
