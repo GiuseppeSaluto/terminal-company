@@ -11,10 +11,10 @@ pub async fn init_db() -> Result<Client, Box<dyn std::error::Error>> {
     let client = Client::with_options(options)?;
 
     ensure_collection_exists(&client, "terminal_company", "game_state").await?;
-    //ensure_collect_config_exists(&client).await?;
+
     load_bestiary(&client).await?;
 
-    info!("✅Connection to MongoDB established on {}", uri);
+    info!("Connection to MongoDB established on {}", uri);
     Ok(client)
 }
 
@@ -29,7 +29,7 @@ async fn ensure_collection_exists(
     if !collections.contains(&coll_name.to_string()) {
         db.create_collection(coll_name).await?;
         info!(
-            "📦 Collection '{}' created in database '{}'",
+            "Collection '{}' created in database '{}'",
             coll_name, db_name
         );
 
@@ -74,6 +74,7 @@ pub async fn save_game_state(
     }
 }
 
+
 pub async fn load_game_state(
     client: &Client,
 ) -> Result<Option<GameState>, Box<dyn std::error::Error>> {
@@ -83,7 +84,7 @@ pub async fn load_game_state(
     match collection.find_one(doc! { "_id": "game_state" }).await {
         Ok(game_state) => Ok(game_state),
         Err(e) => {
-            error!("❌Error loading game_state: {:?}", e);
+            error!("Error loading game_state: {:?}", e);
             Err(Box::new(e))
         }
     }
@@ -99,7 +100,7 @@ pub async fn delete_game_state(client: &Client) -> Result<(), Box<dyn std::error
             Ok(())
         }
         Err(e) => {
-            error!("❌ Error deleting game_state: {:?}", e);
+            error!("Error deleting game_state: {:?}", e);
             Err(Box::new(e))
         }
     }
