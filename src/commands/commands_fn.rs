@@ -1,6 +1,5 @@
 use crate::commands::registration;
-use crate::data::mongodb::load_collect_config;
-use crate::data::mongodb::{self, load_bestiary};
+use crate::data::mongodb::{self, load_bestiary, load_collect_config};
 use crate::models::collect_credits::CollectCreditsEvent;
 use crate::models::lists::{BESTIARY, MOONS, STORE_ITEMS};
 use crate::models::scan_logic::generate_scan_data;
@@ -10,46 +9,112 @@ use ::mongodb::Client;
 use rand::{self, Rng};
 use std::sync::Arc;
 
+#[derive(Debug)]
+enum Command {
+    Moons,
+    Store,
+    Inventory,
+    Scan,
+    Collect,
+    Bestiary,
+    Location,
+    Help,
+    Save,
+    Load,
+    Quit,
+    NewGame,
+    GoTo(String),
+    Buy(String),
+    Unknown(String),
+}
+
+impl Command {
+    fn parse(input: &str) -> Self {
+        match input {
+            "" => Command::Unknown(String::new()),
+            "MOONS" => Command::Moons,
+            "STORE" => Command::Store,
+            "INVENTORY" => Command::Inventory,
+            "SCAN" => Command::Scan,
+            "COLLECT" => Command::Collect,
+            "BESTIARY" => Command::Bestiary,
+            "LOCATION" => Command::Location,
+            "HELP" => Command::Help,
+            "SAVE" => Command::Save,
+            "LOAD" => Command::Load,
+            "QUIT" | "EXIT" => Command::Quit,
+            "NEW GAME" => Command::NewGame,
+            cmd if cmd.starts_with("GO TO ") => Command::GoTo(cmd[6..].trim().to_string()),
+            cmd if cmd.starts_with("BUY ") => Command::Buy(cmd[4..].trim().to_string()),
+            other => Command::Unknown(other.to_string()),
+        }
+    }
+}
+
 pub async fn run_repl(
     client: Arc<Client>,
     mut game_state: GameState,
 ) -> Result<(), Box<dyn std::error::Error>> {
     loop {
         if let Some(input) = read_and_normalize_input() {
-            match input.as_str() {
-                "" => {}
-                "MOONS" => handle_moons(),
-                "STORE" => handle_store(),
-                "INVENTORY" => handle_inv(&game_state),
-                "SCAN" => handle_scan(&mut game_state, &client).await,
-                "COLLECT" => handle_collect(&client, &mut game_state).await,
-                "BESTIARY" => handle_monsters(),
-                "LOCATION" => handle_location(&game_state),
-                "HELP" => handle_help(),
-                "SAVE" => handle_save(client.clone(), &game_state).await,
-                "LOAD" => handle_load(client.clone(), &mut game_state).await,
-                "QUIT" | "EXIT" => {
-                    println!("Exiting game. Goodbye {}!", game_state.players[0].name);
-                    return Ok(());
-                }
-                "NEW GAME" => {
-                    println!("Are you sure you want to start a new game? (YES/NO)");
-                    if let Some(confirm) = read_and_normalize_input() {
-                        if confirm == "YES" {
-                            delete_game_state(&client).await;
-                            game_state = registration::handle_registration(client.clone()).await?;
-                        }
-                    }
-                }
-                cmd if cmd.starts_with("GO TO ") => {
-                    let moon = cmd.trim_start_matches("GO TO ").trim();
-                    handle_go_to(&mut game_state, moon);
-                }
-                cmd if cmd.starts_with("BUY ") => {
-                    handle_buy(&mut game_state, &cmd);
-                }
-                _ => println!("❓ Command not recognized. Type 'help' for the list of commands."),
+            let command = Command::parse(&input);
+            let result = execute_command(command, &client, &mut game_state).await;
+
+            if let Err(e) = result {
+                eprintln!("\n Command failed: {e:?}\n");
             }
+        }
+    }
+}
+
+async fn execute_command(
+    command: Command,
+    client: &Arc<Client>,
+    game_state: &mut GameState,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use Command::*;
+
+    match command {
+        Moons => Ok(handle_moons()),
+        Store => Ok(handle_store()),
+        Inventory => Ok(handle_inv(game_state)),
+        Scan => Ok(handle_scan(game_state, client).await),
+        Collect => Ok(handle_collect(client, game_state).await),
+        Bestiary => Ok(handle_monsters()),
+        Location => Ok(handle_location(game_state)),
+        Help => Ok(handle_help()),
+        Save => Ok(handle_save(client.clone(), game_state).await),
+        Load => Ok(handle_load(client.clone(), game_state).await),
+
+        GoTo(moon) => Ok(handle_go_to(game_state, &moon)),
+        Buy(item) => Ok(handle_buy(game_state, &format!("BUY {}", item))),
+
+        Quit => {
+            println!("Exiting game. Goodbye {}!", game_state.players[0].name);
+            std::process::exit(0);
+        }
+
+        NewGame => {
+            println!("Are you sure you want to start a new game? (YES/NO)");
+            if let Some(confirm) = read_and_normalize_input() {
+                if confirm == "YES" {
+                    delete_game_state(client).await;
+                    *game_state = registration::handle_registration(client.clone()).await?;
+                    println!("✨ New game started!");
+                } else {
+                    println!("Cancelled starting a new game.");
+                }
+            }
+            Ok(())
+        }
+
+        Unknown(cmd) if cmd.is_empty() => Ok(()),
+        Unknown(cmd) => {
+            println!(
+                "⚠️  Unknown command: '{}'. Type HELP for available commands.",
+                cmd
+            );
+            Ok(())
         }
     }
 }
