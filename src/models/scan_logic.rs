@@ -1,7 +1,7 @@
 use crate::models::types::{Bestiary, Monster, ScanData};
 use rand::{Rng, seq::SliceRandom};
 
-fn moon_tier(moon: &str) -> u8 {
+pub fn moon_tier(moon: &str) -> u8 {
     match moon.to_uppercase().as_str() {
         "EXPERIMENTATION" | "ASSURANCE" | "VOW" => 1,
         "OFFENSE" | "MARCH" | "ADAMANCE" => 2,
@@ -19,14 +19,14 @@ fn monsters_for_moon<'a>(bestiary: &'a Bestiary, moon: &str) -> Vec<&'a Monster>
         .collect()
 }
 
-fn danger_value(level: &Option<u32>) -> f32 {
+pub fn danger_value(level: &Option<u32>) -> f32 {
     match level {
         Some(l) => *l as f32 / 20.0,
         None => 1.0,
     }
 }
 
-fn calculate_threat_level(monsters: &[&Monster]) -> u32 {
+pub fn calculate_threat_level(monsters: &[&Monster]) -> u32 {
     monsters
         .iter()
         .map(|m| {

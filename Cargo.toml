@@ -3,6 +3,10 @@ name = "terminal-company"
 version = "0.1.0"
 edition = "2024"
 
+[lib]
+name = "terminal_company"
+path = "src/lib.rs"
+
 [dependencies]
 lazy_static = "1.5.0"
 mongodb = "3.3.0"
