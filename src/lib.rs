@@ -14,3 +14,10 @@ pub mod models {
 pub mod utils {
     pub mod shortcut;
 }
+pub mod ui {
+    pub mod app;
+    pub mod components;
+    pub mod event;
+    pub mod inputs;
+    pub mod output_capture;
+}
