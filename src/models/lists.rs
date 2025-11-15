@@ -108,6 +108,7 @@ lazy_static! {
     ];
 }
 
+#[allow(dead_code)]
 pub const SHIP_UPGRADE: &[&str] = &[
     "Teleporter",
     "Inverse Teleporter",
@@ -115,6 +116,7 @@ pub const SHIP_UPGRADE: &[&str] = &[
     "Signal Translator",
 ];
 
+#[allow(dead_code)]
 pub const SHIP_DECORATIONS: &[&str] = &["Cozy Lights", "Decoy Suit", "Brown Suit", "Purple Suit"];
 
 lazy_static! {
