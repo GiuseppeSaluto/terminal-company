@@ -47,7 +47,7 @@ impl App {
             auto_scroll: true,
         };
         
-        // Messaggio di benvenuto
+        // Initial welcome messages
         app.add_message("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
         app.add_message("🚀 Terminal Company OS v0.1.0");
         app.add_message("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
@@ -168,7 +168,7 @@ impl App {
         self.auto_scroll = false;
     }
     
-    /// Ottiene informazioni sullo stato del gioco per la UI
+    /// info to display
     pub fn get_status_info(&self) -> Vec<(String, String)> {
         let player = &self.game_state.players[0];
         vec![

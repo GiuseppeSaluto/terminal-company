@@ -93,7 +93,7 @@ async fn handle_confirmation_mode(app: &mut App, key: KeyEvent) {
                             app.is_processing = true;
                             app.add_message("Starting new game...");
                             
-                            // Elimina il vecchio stato e crea uno nuovo
+                            // Delete existing game state
                             commands_fn::delete_game_state(&app.db_client).await;
                             match crate::commands::registration::handle_registration(app.db_client.clone()).await {
                                 Ok(new_state) => {
@@ -287,7 +287,7 @@ async fn execute_command(app: &mut App, command: &str) {
     app.is_processing = false;
 }
 
-// Versioni UI-friendly dei comandi che aggiungono messaggi all'app invece di stampare
+// UI-friendly versions of commands that add messages to the app instead of printing
 
 fn handle_moons_ui(app: &mut App) {
     use crate::models::lists::MOONS;
