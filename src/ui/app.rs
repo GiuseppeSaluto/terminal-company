@@ -74,12 +74,6 @@ impl App {
         }
     }
     
-    pub fn add_messages(&mut self, messages: &[String]) {
-        for msg in messages {
-            self.add_message(msg);
-        }
-    }
-    
     pub fn clear_input(&mut self) {
         self.input.clear();
         self.cursor_position = 0;
@@ -161,11 +155,6 @@ impl App {
     pub fn scroll_to_bottom(&mut self) {
         self.scroll_offset = 0;
         self.auto_scroll = true;
-    }
-    
-    pub fn scroll_to_top(&mut self) {
-        self.scroll_offset = self.message_log.len().saturating_sub(1);
-        self.auto_scroll = false;
     }
     
     /// info to display

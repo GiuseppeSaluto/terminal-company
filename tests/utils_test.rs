@@ -1,4 +1,4 @@
-use terminal_company::utils::shortcut::{format_name, println_separator};
+use terminal_company::utils::shortcut::{format_name};
 
 #[test]
 fn test_format_name_lowercase() {
@@ -57,11 +57,6 @@ fn test_format_name_whitespace() {
 fn test_format_name_unicode() {
     assert_eq!(format_name("ñoño"), "Ñoño");
     assert_eq!(format_name("über"), "Über");
-}
-
-#[test]
-fn test_println_separator_does_not_panic() {
-    println_separator();
 }
 
 #[test]
