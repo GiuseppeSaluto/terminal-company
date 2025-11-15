@@ -212,43 +212,43 @@ async fn execute_command(app: &mut App, command: &str) {
     let result = match command {
         "" => return,
         "MOONS" => {
-            handle_moons_ui(app);
+            handle_moons(app);
             Ok::<(), Box<dyn std::error::Error>>(())
         }
         "STORE" => {
-            handle_store_ui(app);
+            handle_store(app);
             Ok(())
         }
         "INVENTORY" | "INV" => {
-            handle_inv_ui(app);
+            handle_inv(app);
             Ok(())
         }
         "SCAN" => {
-            handle_scan_ui(app).await;
+            handle_scan(app).await;
             Ok(())
         }
         "COLLECT" => {
-            handle_collect_ui(app).await;
+            handle_collect(app).await;
             Ok(())
         }
         "BESTIARY" => {
-            handle_monsters_ui(app);
+            handle_monsters(app);
             Ok(())
         }
         "LOCATION" | "LOC" => {
-            handle_location_ui(app);
+            handle_location(app);
             Ok(())
         }
         "HELP" => {
-            handle_help_ui(app);
+            handle_help(app);
             Ok(())
         }
         "SAVE" => {
-            handle_save_ui(app).await;
+            handle_save(app).await;
             Ok(())
         }
         "LOAD" => {
-            handle_load_ui(app).await;
+            handle_load(app).await;
             Ok(())
         }
         "QUIT" | "EXIT" => {
@@ -267,15 +267,15 @@ async fn execute_command(app: &mut App, command: &str) {
         }
         cmd if cmd.starts_with("GO TO ") => {
             let moon = &cmd[6..].trim();
-            handle_go_to_ui(app, moon);
+            handle_go_to(app, moon);
             Ok(())
         }
         cmd if cmd.starts_with("BUY ") => {
-            handle_buy_ui(app, cmd);
+            handle_buy(app, cmd);
             Ok(())
         }
         _ => {
-            app.add_message(&format!("⚠️  Unknown command: '{}'. Type HELP for available commands.", command));
+            app.add_message(&format!("⚠️ Unknown command: '{}'. Type HELP for available commands.", command));
             Ok(())
         }
     };
@@ -289,12 +289,12 @@ async fn execute_command(app: &mut App, command: &str) {
 
 // UI-friendly versions of commands that add messages to the app instead of printing
 
-fn handle_moons_ui(app: &mut App) {
+fn handle_moons(app: &mut App) {
     use crate::models::lists::MOONS;
     app.add_message(&format!("Visitable: {}", MOONS.join(", ")));
 }
 
-fn handle_store_ui(app: &mut App) {
+fn handle_store(app: &mut App) {
     use crate::models::lists::STORE_ITEMS;
     use crate::utils::shortcut::format_name;
     
@@ -309,7 +309,7 @@ fn handle_store_ui(app: &mut App) {
     }
 }
 
-fn handle_inv_ui(app: &mut App) {
+fn handle_inv(app: &mut App) {
     app.add_message("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     app.add_message("Your Inventory Status:");
     app.add_message("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
@@ -329,7 +329,7 @@ fn handle_inv_ui(app: &mut App) {
     app.add_message("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 }
 
-async fn handle_scan_ui(app: &mut App) {
+async fn handle_scan(app: &mut App) {
     use crate::utils::shortcut::format_name;
     use crate::data::mongodb::load_bestiary;
     use crate::models::scan_logic::generate_scan_data;
@@ -393,7 +393,7 @@ async fn handle_scan_ui(app: &mut App) {
     }
 }
 
-async fn handle_collect_ui(app: &mut App) {
+async fn handle_collect(app: &mut App) {
     use crate::data::mongodb::load_collect_config;
     use crate::models::collect_credits::CollectCreditsEvent;
     use crate::utils::shortcut::format_name;
@@ -425,7 +425,7 @@ async fn handle_collect_ui(app: &mut App) {
     }
 }
 
-fn handle_monsters_ui(app: &mut App) {
+fn handle_monsters(app: &mut App) {
     use crate::models::lists::BESTIARY;
     use crate::utils::shortcut::format_name;
     
@@ -439,14 +439,14 @@ fn handle_monsters_ui(app: &mut App) {
     }
 }
 
-fn handle_location_ui(app: &mut App) {
+fn handle_location(app: &mut App) {
     use crate::utils::shortcut::format_name;
     app.add_message("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     app.add_message(&format!("Your current location is: {}", format_name(&app.game_state.ship.location)));
     app.add_message("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 }
 
-fn handle_help_ui(app: &mut App) {
+fn handle_help(app: &mut App) {
     app.add_message("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     app.add_message("Commands available:");
     app.add_message("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
@@ -467,20 +467,20 @@ fn handle_help_ui(app: &mut App) {
     app.add_message("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 }
 
-fn handle_go_to_ui(app: &mut App, moon: &str) {
+fn handle_go_to(app: &mut App, moon: &str) {
     use crate::models::lists::MOONS;
     use crate::utils::shortcut::format_name;
     
     if MOONS.iter().any(|m| m.eq_ignore_ascii_case(moon)) {
         app.game_state.ship.location = moon.to_string().to_uppercase();
         app.add_message(&format!("Journey to {} underway...", format_name(&app.game_state.ship.location)));
-        handle_location_ui(app);
+        handle_location(app);
     } else {
         app.add_message(&format!("'{}' Moon not available.", moon));
     }
 }
 
-fn handle_buy_ui(app: &mut App, cmd: &str) {
+fn handle_buy(app: &mut App, cmd: &str) {
     use crate::models::lists::STORE_ITEMS;
     use crate::utils::shortcut::format_name;
     
@@ -511,7 +511,7 @@ fn handle_buy_ui(app: &mut App, cmd: &str) {
     }
 }
 
-async fn handle_save_ui(app: &mut App) {
+async fn handle_save(app: &mut App) {
     use crate::data::mongodb;
     
     match mongodb::save_game_state(&app.db_client, &app.game_state).await {
@@ -520,7 +520,7 @@ async fn handle_save_ui(app: &mut App) {
     }
 }
 
-async fn handle_load_ui(app: &mut App) {
+async fn handle_load(app: &mut App) {
     use crate::data::mongodb;
     
     match mongodb::load_game_state(&app.db_client).await {
